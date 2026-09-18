@@ -236,10 +236,18 @@ def register_guest_routes(app):
                     body_lines.append(f"Q: {prompt}")
                     body_lines.append(f"A: {val or '(no answer)'}")
                     body_lines.append("")
+                import pdf_report
+                pdf_bytes = pdf_report.build_questionnaire_pdf(
+                    title=q["name"], first_name=first, last_name=last,
+                    answers=answers)
+                safe_name = "".join(ch for ch in f"{q['name']} - {first} {last}"
+                                    if ch.isalnum() or ch in " -_").strip()
+                pdf_filename = f"{safe_name or 'questionnaire'}.pdf"
                 try:
                     mailer.send(settings,
                                 subject=f"{q['name']} - {first} {last}",
-                                body="\n".join(body_lines), attachments=[])
+                                body="\n".join(body_lines),
+                                attachments=[(pdf_filename, pdf_bytes)])
                 except Exception:
                     return render_template(
                         "guest_questionnaire.html", q=q, first=first,

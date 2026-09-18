@@ -15,10 +15,21 @@ def _build_message(settings, subject, body, attachments):
     msg["To"] = settings.ADMIN_EMAIL
     msg.set_content(body)
     for filename, data in attachments:
-        maintype, subtype = "application", "octet-stream"
+        maintype, subtype = _guess_mime(filename)
         msg.add_attachment(data, maintype=maintype, subtype=subtype,
                            filename=filename)
     return msg
+
+
+def _guess_mime(filename):
+    ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+    mapping = {
+        "pdf": ("application", "pdf"),
+        "doc": ("application", "msword"),
+        "docx": ("application",
+                 "vnd.openxmlformats-officedocument.wordprocessingml.document"),
+    }
+    return mapping.get(ext, ("application", "octet-stream"))
 
 
 def send(settings, *, subject, body, attachments):
