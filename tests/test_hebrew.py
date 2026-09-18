@@ -4,7 +4,7 @@ import os
 import pytest
 
 from textdir import is_rtl, direction
-from pdf_report import build_questionnaire_pdf
+from pdf_report import build_questionnaire_pdf, _order_cells, _col_widths
 from app import create_app
 from links import make_link_token
 
@@ -52,6 +52,16 @@ def test_english_pdf_unaffected():
         title="Annual Health Review", first_name="Jane", last_name="Doe",
         answers=[("Age", "42")])
     assert _pdf_ok(data)
+
+
+def test_rtl_puts_prompt_on_the_right():
+    # LTR: prompt-left (col 0), answer-right (col 1); narrow prompt column.
+    assert _order_cells(False, "PROMPT", "ANSWER") == ["PROMPT", "ANSWER"]
+    assert _col_widths(False)[0] < _col_widths(False)[1]
+    # RTL: answer-left (col 0), prompt-right (col 1); prompt still on the wide
+    # right side of the page.
+    assert _order_cells(True, "PROMPT", "ANSWER") == ["ANSWER", "PROMPT"]
+    assert _col_widths(True)[0] > _col_widths(True)[1]
 
 
 @pytest.fixture

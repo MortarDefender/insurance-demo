@@ -74,6 +74,20 @@ def _cell(text, *, base_style, font_ok):
     return Paragraph(_escape(_shape(text)), style)
 
 
+def _order_cells(is_rtl_doc, prompt_cell, answer_cell):
+    """Column order for one row. RTL reads question-right, answer-left, so the
+    answer cell goes in the (left) first column and the prompt in the second."""
+    if is_rtl_doc:
+        return [answer_cell, prompt_cell]
+    return [prompt_cell, answer_cell]
+
+
+def _col_widths(is_rtl_doc):
+    """Prompt column narrow, answer column wide; mirrored for RTL so the prompt
+    still lands on the right edge of the page."""
+    return [100 * mm, 60 * mm] if is_rtl_doc else [60 * mm, 100 * mm]
+
+
 def build_questionnaire_pdf(*, title, first_name, last_name, answers):
     """answers: list of (prompt, answer_string). Returns PDF bytes."""
     font_ok = _ensure_font()
@@ -108,18 +122,19 @@ def build_questionnaire_pdf(*, title, first_name, last_name, answers):
     story.append(Paragraph(f"Submitted: {stamp}", styles["Muted"]))
     story.append(Spacer(1, 8 * mm))
 
+    is_rtl_doc = _is_rtl(title) or any(_is_rtl(p) for p, _ in answers)
+
     rows = []
     for prompt, answer in answers:
         answer = answer if answer not in (None, "") else "(no answer)"
-        rows.append([
-            _cell(prompt, base_style=styles["QPrompt"], font_ok=font_ok),
-            _cell(answer, base_style=styles["QAnswer"], font_ok=font_ok),
-        ])
+        prompt_cell = _cell(prompt, base_style=styles["QPrompt"],
+                            font_ok=font_ok)
+        answer_cell = _cell(answer, base_style=styles["QAnswer"],
+                            font_ok=font_ok)
+        rows.append(_order_cells(is_rtl_doc, prompt_cell, answer_cell))
 
     if rows:
-        # If the questionnaire is RTL, put the prompt column on the right.
-        col_prompt, col_answer = 60 * mm, 100 * mm
-        table = Table(rows, colWidths=[col_prompt, col_answer])
+        table = Table(rows, colWidths=_col_widths(is_rtl_doc))
         table.setStyle(TableStyle([
             ("VALIGN", (0, 0), (-1, -1), "TOP"),
             ("LINEBELOW", (0, 0), (-1, -1), 0.25, colors.HexColor("#dddddd")),
