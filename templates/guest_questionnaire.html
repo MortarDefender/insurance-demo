@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}{{ q.name }}{% endblock %}
+{% block content %}
+<h1>Hello {{ first }}</h1>
+<p class="help">Please answer the questions below and press submit. Your answers
+  are sent directly to us and are not stored on this site.</p>
+{% if error %}<div class="flash">{{ error }}</div>{% endif %}
+<form method="post">
+  {% for question in q.questions %}
+  <div class="card">
+    <label>{{ loop.index }}. {{ question.prompt }}
+      {% if question.required %}<span style="color:#c53030">*</span>{% endif %}
+    </label>
+    {% set nm = "answer_" ~ loop.index0 %}
+    {% if question.type == "text" %}
+      <textarea name="{{ nm }}" rows="3"></textarea>
+    {% elif question.type == "number" %}
+      <input type="number" name="{{ nm }}">
+    {% elif question.type == "date" %}
+      <input type="date" name="{{ nm }}">
+    {% elif question.type == "yesno" %}
+      <select name="{{ nm }}">
+        <option value="">-- select --</option>
+        <option value="Yes">Yes</option>
+        <option value="No">No</option>
+      </select>
+    {% elif question.type == "choice" %}
+      <select name="{{ nm }}">
+        <option value="">-- select --</option>
+        {% for opt in question.options %}
+        <option value="{{ opt }}">{{ opt }}</option>
+        {% endfor %}
+      </select>
+    {% else %}
+      <input type="text" name="{{ nm }}">
+    {% endif %}
+  </div>
+  {% endfor %}
+  <button type="submit" class="btn">Submit</button>
+</form>
+{% endblock %}

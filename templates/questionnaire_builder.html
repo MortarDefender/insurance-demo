@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}Questionnaire builder{% endblock %}
+{% block content %}
+<h1>{{ "Edit" if questionnaire else "New" }} questionnaire</h1>
+<form method="post">
+  <label>Name
+    <input type="text" name="name"
+           value="{{ questionnaire.name if questionnaire else '' }}" required>
+  </label>
+
+  <h3>Questions</h3>
+  <div id="questions">
+    {% if questionnaire %}
+      {% for q in questionnaire.questions %}
+      <div class="q-row">
+        <label>Prompt
+          <input type="text" name="q_prompt" value="{{ q.prompt }}"></label>
+        <label>Type
+          <select name="q_type" onchange="toggleOptions(this)">
+            {% for t in ["text","choice","yesno","number","date"] %}
+            <option value="{{ t }}" {{ "selected" if q.type==t }}>{{ t }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label>Options (for choice, separate with | )
+          <input type="text" name="q_options"
+            value="{{ q.options|join('|') if q.options else '' }}"></label>
+        <label>Required
+          <input type="checkbox" onchange="syncReq(this)"
+                 {{ "checked" if q.required }}>
+          <input type="hidden" name="q_required_flag"
+                 value="{{ '1' if q.required else '0' }}"></label>
+        <button type="button" class="danger"
+                onclick="this.closest('.q-row').remove()">Remove</button>
+      </div>
+      {% endfor %}
+    {% endif %}
+  </div>
+
+  <button type="button" class="btn secondary" onclick="addQuestion()">
+    + Add question</button>
+  <div style="margin-top:16px">
+    <button type="submit" class="btn">Save</button>
+    <a class="btn secondary" href="{{ url_for('admin') }}">Cancel</a>
+  </div>
+</form>
+
+<template id="qTemplate">
+  <div class="q-row">
+    <label>Prompt <input type="text" name="q_prompt"></label>
+    <label>Type
+      <select name="q_type" onchange="toggleOptions(this)">
+        <option value="text">text</option>
+        <option value="choice">choice</option>
+        <option value="yesno">yesno</option>
+        <option value="number">number</option>
+        <option value="date">date</option>
+      </select>
+    </label>
+    <label>Options (for choice, separate with | )
+      <input type="text" name="q_options"></label>
+    <label>Required
+      <input type="checkbox" onchange="syncReq(this)">
+      <input type="hidden" name="q_required_flag" value="0"></label>
+    <button type="button" class="danger"
+            onclick="this.closest('.q-row').remove()">Remove</button>
+  </div>
+</template>
+
+<script>
+function addQuestion() {
+  const tpl = document.getElementById('qTemplate');
+  document.getElementById('questions')
+    .appendChild(tpl.content.cloneNode(true));
+}
+function syncReq(cb) {
+  cb.parentElement.querySelector('input[type=hidden]').value =
+    cb.checked ? '1' : '0';
+}
+function toggleOptions(sel) { /* options field always visible for simplicity */ }
+</script>
+{% endblock %}

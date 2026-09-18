@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}Admin - Templates{% endblock %}
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center">
+  <h1>Templates</h1>
+  <a href="{{ url_for('logout') }}">Log out</a>
+</div>
+
+<h2 class="section-title">Questionnaires</h2>
+<a class="btn" href="{{ url_for('questionnaire_new') }}">+ New questionnaire</a>
+<table>
+  <thead><tr><th>Name</th><th>Questions</th><th>Actions</th></tr></thead>
+  <tbody>
+  {% for q in questionnaires %}
+    <tr>
+      <td>{{ q.name }}</td>
+      <td>{{ q.questions|length }}</td>
+      <td>
+        <button class="btn"
+          onclick="openShare('questionnaire','{{ q.id }}','{{ q.name }}')">
+          Share</button>
+        <a class="btn secondary"
+           href="{{ url_for('questionnaire_edit', qid=q.id) }}">Edit</a>
+        <form method="post" style="display:inline"
+              action="{{ url_for('questionnaire_delete', qid=q.id) }}">
+          <button class="danger" onclick="return confirm('Delete?')">
+            Delete</button>
+        </form>
+      </td>
+    </tr>
+  {% else %}
+    <tr><td colspan="3" class="help">No questionnaires yet.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+<h2 class="section-title">Documents</h2>
+<a class="btn" href="{{ url_for('document_new') }}">+ Upload document</a>
+<table>
+  <thead><tr><th>Name</th><th>File</th><th>Actions</th></tr></thead>
+  <tbody>
+  {% for d in documents %}
+    <tr>
+      <td>{{ d.display_name }}</td>
+      <td>{{ d.original_filename }}</td>
+      <td>
+        <button class="btn"
+          onclick="openShare('document','{{ d.id }}','{{ d.display_name }}')">
+          Share</button>
+        <form method="post" style="display:inline"
+              action="{{ url_for('document_delete', did=d.id) }}">
+          <button class="danger" onclick="return confirm('Delete?')">
+            Delete</button>
+        </form>
+      </td>
+    </tr>
+  {% else %}
+    <tr><td colspan="3" class="help">No documents yet.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+<div class="modal-backdrop" id="shareModal">
+  <div class="modal">
+    <h3 id="shareTitle">Share</h3>
+    <p class="help">Enter the client's name to generate a unique link.</p>
+    <label>First name <input type="text" id="firstName"></label>
+    <label>Last name <input type="text" id="lastName"></label>
+    <input type="hidden" id="shareKind">
+    <input type="hidden" id="shareTemplateId">
+    <div style="margin-top:12px">
+      <button class="btn" onclick="generateLink()">Generate link</button>
+      <button class="btn secondary" onclick="closeShare()">Close</button>
+    </div>
+    <div id="linkResult" class="link-box" style="display:none"></div>
+  </div>
+</div>
+
+<script>
+function openShare(kind, id, name) {
+  document.getElementById('shareKind').value = kind;
+  document.getElementById('shareTemplateId').value = id;
+  document.getElementById('shareTitle').textContent = 'Share: ' + name;
+  document.getElementById('firstName').value = '';
+  document.getElementById('lastName').value = '';
+  document.getElementById('linkResult').style.display = 'none';
+  document.getElementById('shareModal').classList.add('open');
+}
+function closeShare() {
+  document.getElementById('shareModal').classList.remove('open');
+}
+async function generateLink() {
+  const body = new FormData();
+  body.append('kind', document.getElementById('shareKind').value);
+  body.append('template_id', document.getElementById('shareTemplateId').value);
+  body.append('first_name', document.getElementById('firstName').value);
+  body.append('last_name', document.getElementById('lastName').value);
+  const resp = await fetch('{{ url_for("admin_share") }}',
+    {method: 'POST', body});
+  const box = document.getElementById('linkResult');
+  box.style.display = 'block';
+  if (resp.ok) {
+    const data = await resp.json();
+    box.textContent = data.link;
+  } else {
+    box.textContent = 'Please enter both first and last name.';
+  }
+}
+</script>
+{% endblock %}
