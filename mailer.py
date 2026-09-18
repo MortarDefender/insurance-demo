@@ -1,0 +1,52 @@
+"""Send results to the admin. Outbox mode (local) writes .eml files to disk;
+smtp mode sends real email. Switching is a config change only."""
+
+import os
+import smtplib
+import time
+import uuid
+from email.message import EmailMessage
+
+
+def _build_message(settings, subject, body, attachments):
+    msg = EmailMessage()
+    msg["Subject"] = subject
+    msg["From"] = settings.ADMIN_EMAIL
+    msg["To"] = settings.ADMIN_EMAIL
+    msg.set_content(body)
+    for filename, data in attachments:
+        maintype, subtype = "application", "octet-stream"
+        msg.add_attachment(data, maintype=maintype, subtype=subtype,
+                           filename=filename)
+    return msg
+
+
+def send(settings, *, subject, body, attachments):
+    """attachments: list of (filename, bytes)."""
+    msg = _build_message(settings, subject, body, attachments)
+    mode = getattr(settings, "MAIL_MODE", "outbox")
+    if mode == "smtp":
+        _send_smtp(settings, msg)
+    else:
+        _send_outbox(settings, msg)
+
+
+def _send_outbox(settings, msg):
+    os.makedirs(settings.OUTBOX_DIR, exist_ok=True)
+    name = f"{time.strftime('%Y%m%d-%H%M%S')}-{uuid.uuid4().hex[:8]}.eml"
+    with open(os.path.join(settings.OUTBOX_DIR, name), "wb") as f:
+        f.write(bytes(msg))
+
+
+def _send_smtp(settings, msg):
+    if settings.SMTP_USE_TLS:
+        server = smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT)
+        server.starttls()
+    else:
+        server = smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT)
+    try:
+        if settings.SMTP_USERNAME:
+            server.login(settings.SMTP_USERNAME, settings.SMTP_PASSWORD)
+        server.send_message(msg)
+    finally:
+        server.quit()
