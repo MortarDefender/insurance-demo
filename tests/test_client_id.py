@@ -147,3 +147,41 @@ def test_admin_share_accepts_client_id(app_and_client, settings):
     token = link.rsplit("/c/", 1)[-1]
     assert read_link_token(settings.SECRET_KEY, token,
                            max_age_days=7)["client_id"] == "A-77"
+
+
+def test_hebrew_id_encrypts_pdf():
+    data = build_questionnaire_pdf(
+        title="Health", first_name="Jane", last_name="Doe",
+        answers=[("Age", "41")], password="לקוח-77")
+    r = PdfReader(BytesIO(data))
+    assert r.is_encrypted and r.decrypt("לקוח-77")
+
+
+def test_whitespace_only_id_is_treated_as_no_id(settings):
+    # In the token, a whitespace-only ID collapses to empty.
+    tok = make_link_token(settings.SECRET_KEY, kind="questionnaire",
+                          template_id="t1", first_name="Jane", last_name="Doe",
+                          client_id="   ", expiry_days=7)
+    assert read_link_token(settings.SECRET_KEY, tok,
+                           max_age_days=7)["client_id"] == ""
+    # And a whitespace-only PDF password leaves the PDF unencrypted.
+    data = build_questionnaire_pdf(
+        title="Health", first_name="Jane", last_name="Doe",
+        answers=[("Age", "41")], password="   ")
+    assert PdfReader(BytesIO(data)).is_encrypted is False
+
+
+def test_crlf_in_id_cannot_inject_email_headers(app_and_client, settings):
+    app, c = app_and_client
+    qid = app.config["STORE"].create_questionnaire(
+        name="Health",
+        questions=[{"prompt": "Age", "type": "number", "required": True}])
+    evil = "A-1\r\nBcc: attacker@evil.com"
+    token = make_link_token(settings.SECRET_KEY, kind="questionnaire",
+                            template_id=qid, first_name="Jane", last_name="Doe",
+                            client_id=evil, expiry_days=7)
+    assert c.post(f"/c/{token}", data={"answer_0": "41"}).status_code == 200
+    msg = _latest_email(settings)
+    # No injected header, and the subject is a single line.
+    assert msg.get("Bcc") is None
+    assert "\r" not in msg["Subject"] and "\n" not in msg["Subject"]

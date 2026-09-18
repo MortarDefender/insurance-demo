@@ -13,6 +13,14 @@ class LinkError(Exception):
 _SALT = "client-link"
 
 
+def _clean_id(client_id):
+    """Normalize the optional client ID. Strips surrounding whitespace and
+    removes control characters (notably CR/LF) so it is safe to place in an
+    email header and to use as a PDF password."""
+    text = (client_id or "").strip()
+    return "".join(ch for ch in text if ch == " " or ord(ch) >= 0x20)
+
+
 def _serializer(secret_key):
     return URLSafeTimedSerializer(secret_key, salt=_SALT)
 
@@ -28,8 +36,9 @@ def make_link_token(secret_key, *, kind, template_id, first_name, last_name,
         "last_name": last_name,
         # Optional client/reference ID. Used in the email subject and as the
         # password that encrypts the generated PDF. Stored only inside the
-        # signed token, never on disk.
-        "client_id": (client_id or "").strip(),
+        # signed token, never on disk. Control chars are stripped so it is safe
+        # in an email header.
+        "client_id": _clean_id(client_id),
         # Per-client expiry, signed into the token so it cannot be tampered with.
         "expiry_days": int(expiry_days),
     }
