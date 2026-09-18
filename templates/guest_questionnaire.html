@@ -38,6 +38,24 @@
             <option value="{{ opt }}">{{ opt }}</option>
             {% endfor %}
           </select>
+        {% elif question.type == "table" %}
+          <div class="table-wrap" style="margin-top:8px">
+            <table class="answer-grid">
+              <thead><tr>
+                {% for col in question.columns %}<th>{{ col }}</th>{% endfor %}
+              </tr></thead>
+              <tbody>
+                {% for r in range(question.rows) %}
+                <tr>
+                  {% for c in range(question.columns|length) %}
+                  <td><input type="text" dir="auto"
+                       name="{{ nm }}_r{{ r }}_c{{ c }}"></td>
+                  {% endfor %}
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
         {% else %}
           <input type="text" name="{{ nm }}" dir="auto">
         {% endif %}

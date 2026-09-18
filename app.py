@@ -165,6 +165,8 @@ def register_admin_routes(app):
         prompts = form.getlist("q_prompt")
         types = form.getlist("q_type")
         options = form.getlist("q_options")
+        # Fixed row count for table questions (one entry per question row).
+        table_rows = form.getlist("q_rows")
         # Checkboxes don't submit when unchecked, so a hidden flag per row
         # carries the required state and keeps indexes aligned.
         req_flags = form.getlist("q_required_flag")
@@ -174,7 +176,7 @@ def register_admin_routes(app):
             if not prompt:
                 continue
             qtype = types[i] if i < len(types) else "text"
-            valid_types = ("text", "number", "date", "yesno", "choice")
+            valid_types = ("text", "number", "date", "yesno", "choice", "table")
             if qtype not in valid_types:
                 qtype = "text"
             opts_raw = options[i] if i < len(options) else ""
@@ -187,6 +189,18 @@ def register_admin_routes(app):
                 # client is never shown an empty, unanswerable dropdown.
                 if len(opts) >= 1:
                     q["options"] = opts
+                else:
+                    q["type"] = "text"
+            elif qtype == "table":
+                # A table needs column headers (reusing q_options) and a fixed
+                # row count. Fall back to free text if the columns are missing.
+                if len(opts) >= 1:
+                    q["columns"] = opts
+                    try:
+                        n = int(table_rows[i]) if i < len(table_rows) else 1
+                    except (ValueError, TypeError):
+                        n = 1
+                    q["rows"] = max(1, min(n, 50))  # clamp to a sane range
                 else:
                     q["type"] = "text"
             questions.append(q)
@@ -332,10 +346,33 @@ def register_guest_routes(app):
             if request.method == "POST":
                 answers, missing = [], False
                 for i, question in enumerate(q["questions"]):
-                    val = request.form.get(f"answer_{i}", "").strip()
-                    if question.get("required") and not val:
-                        missing = True
-                    answers.append((question["prompt"], val))
+                    if question.get("type") == "table":
+                        cols = question.get("columns", [])
+                        nrows = int(question.get("rows", 1))
+                        grid = []
+                        any_filled = False
+                        all_filled = True
+                        for r in range(nrows):
+                            row_vals = []
+                            for c in range(len(cols)):
+                                cell = request.form.get(
+                                    f"answer_{i}_r{r}_c{c}", "").strip()
+                                if cell:
+                                    any_filled = True
+                                else:
+                                    all_filled = False
+                                row_vals.append(cell)
+                            grid.append(row_vals)
+                        # Required means the whole table must be filled.
+                        if question.get("required") and not all_filled:
+                            missing = True
+                        answers.append((question["prompt"],
+                                        {"columns": cols, "rows": grid}))
+                    else:
+                        val = request.form.get(f"answer_{i}", "").strip()
+                        if question.get("required") and not val:
+                            missing = True
+                        answers.append((question["prompt"], val))
                 if missing:
                     return render_template(
                         "guest_questionnaire.html", q=q, first=first,
@@ -344,7 +381,15 @@ def register_guest_routes(app):
                 body_lines = [f"Client: {first} {last}", ""]
                 for prompt, val in answers:
                     body_lines.append(f"Q: {prompt}")
-                    body_lines.append(f"A: {val or '(no answer)'}")
+                    if isinstance(val, dict):
+                        # Render a table answer as a simple text grid.
+                        cols = val.get("columns", [])
+                        body_lines.append("   " + " | ".join(cols))
+                        for row in val.get("rows", []):
+                            cells = [c or "-" for c in row]
+                            body_lines.append("   " + " | ".join(cells))
+                    else:
+                        body_lines.append(f"A: {val or '(no answer)'}")
                     body_lines.append("")
                 import pdf_report
                 pdf_bytes = pdf_report.build_questionnaire_pdf(

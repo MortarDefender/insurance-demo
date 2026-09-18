@@ -88,6 +88,42 @@ def _col_widths(is_rtl_doc):
     return [100 * mm, 60 * mm] if is_rtl_doc else [60 * mm, 100 * mm]
 
 
+def _table_answer_flowable(answer, styles, font_ok):
+    """Render a table-type answer ({'columns': [...], 'rows': [[...], ...]}) as a
+    nested reportlab Table so it appears as a real grid inside the answer cell."""
+    columns = answer.get("columns", [])
+    grid = answer.get("rows", [])
+    if not columns:
+        return _cell("(no answer)", base_style=styles["QAnswer"],
+                     font_ok=font_ok)
+
+    header = [_cell(col, base_style=styles["QPrompt"], font_ok=font_ok)
+              for col in columns]
+    data = [header]
+    for row in grid:
+        cells = []
+        for c in range(len(columns)):
+            val = row[c] if c < len(row) else ""
+            cells.append(_cell(val or "-", base_style=styles["QAnswer"],
+                               font_ok=font_ok))
+        data.append(cells)
+
+    # Distribute the answer column width (~100mm) across the table columns.
+    total = 96 * mm
+    col_w = max(18 * mm, total / max(1, len(columns)))
+    inner = Table(data, colWidths=[col_w] * len(columns))
+    inner.setStyle(TableStyle([
+        ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#cccccc")),
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#f2f4f8")),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("TOPPADDING", (0, 0), (-1, -1), 4),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+        ("LEFTPADDING", (0, 0), (-1, -1), 5),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 5),
+    ]))
+    return inner
+
+
 def build_questionnaire_pdf(*, title, first_name, last_name, answers,
                             password=""):
     """answers: list of (prompt, answer_string). Returns PDF bytes.
@@ -143,11 +179,14 @@ def build_questionnaire_pdf(*, title, first_name, last_name, answers,
 
     rows = []
     for prompt, answer in answers:
-        answer = answer if answer not in (None, "") else "(no answer)"
         prompt_cell = _cell(prompt, base_style=styles["QPrompt"],
                             font_ok=font_ok)
-        answer_cell = _cell(answer, base_style=styles["QAnswer"],
-                            font_ok=font_ok)
+        if isinstance(answer, dict):
+            answer_cell = _table_answer_flowable(answer, styles, font_ok)
+        else:
+            answer = answer if answer not in (None, "") else "(no answer)"
+            answer_cell = _cell(answer, base_style=styles["QAnswer"],
+                                font_ok=font_ok)
         rows.append(_order_cells(is_rtl_doc, prompt_cell, answer_cell))
 
     if rows:

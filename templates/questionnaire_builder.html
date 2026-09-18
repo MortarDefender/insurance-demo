@@ -30,13 +30,15 @@
             <select name="q_type" onchange="onTypeChange(this)">
               {% for val, lbl in [("text","Short text"),("number","Number"),
                                   ("date","Date"),("yesno","Yes / No"),
-                                  ("choice","Multiple choice")] %}
+                                  ("choice","Multiple choice"),
+                                  ("table","Table")] %}
               <option value="{{ val }}" {{ "selected" if q.type==val }}>{{ lbl }}</option>
               {% endfor %}
             </select>
           </label>
         </div>
 
+        <!-- Multiple-choice editor -->
         <div class="choice-editor" {{ '' if q.type == 'choice' else 'hidden' }}>
           <p class="field-hint" style="margin-bottom:6px">Answer choices the
             client can pick from:</p>
@@ -55,9 +57,39 @@
           </div>
           <button type="button" class="btn btn--sm secondary"
                   onclick="addChoice(this)">+ Add choice</button>
-          <input type="hidden" name="q_options"
-                 value="{{ q.options|join('|') if q.options else '' }}">
         </div>
+
+        <!-- Table editor -->
+        <div class="table-editor" {{ '' if q.type == 'table' else 'hidden' }}>
+          <p class="field-hint" style="margin-bottom:6px">Column headers the
+            client fills in:</p>
+          <div class="choice-list">
+            {% if q.type == 'table' and q.columns %}
+              {% for col in q.columns %}
+              <div class="choice-item">
+                <input type="text" class="column-input" value="{{ col }}"
+                       placeholder="Column header">
+                <button type="button" class="icon-btn icon-btn--danger"
+                        title="Remove column" onclick="removeChoice(this)">
+                  &times;</button>
+              </div>
+              {% endfor %}
+            {% endif %}
+          </div>
+          <button type="button" class="btn btn--sm secondary"
+                  onclick="addColumn(this)">+ Add column</button>
+          <label style="max-width:180px">Number of rows
+            <input type="number" class="rows-input" min="1" max="50"
+                   value="{{ q.rows if q.type == 'table' and q.rows else 3 }}">
+          </label>
+        </div>
+
+        <!-- Hidden fields the backend reads; filled by JS on submit. One each
+             per question row so getlist() stays index-aligned. -->
+        <input type="hidden" name="q_options"
+               value="{{ q.options|join('|') if q.options else (q.columns|join('|') if q.columns else '') }}">
+        <input type="hidden" name="q_rows"
+               value="{{ q.rows if q.rows else '' }}">
 
         <div class="q-row__foot">
           <label class="inline-check">
@@ -94,6 +126,7 @@
           <option value="date">Date</option>
           <option value="yesno">Yes / No</option>
           <option value="choice">Multiple choice</option>
+          <option value="table">Table</option>
         </select>
       </label>
     </div>
@@ -103,8 +136,19 @@
       <div class="choice-list"></div>
       <button type="button" class="btn btn--sm secondary"
               onclick="addChoice(this)">+ Add choice</button>
-      <input type="hidden" name="q_options" value="">
     </div>
+    <div class="table-editor" hidden>
+      <p class="field-hint" style="margin-bottom:6px">Column headers the client
+        fills in:</p>
+      <div class="choice-list"></div>
+      <button type="button" class="btn btn--sm secondary"
+              onclick="addColumn(this)">+ Add column</button>
+      <label style="max-width:180px">Number of rows
+        <input type="number" class="rows-input" min="1" max="50" value="3">
+      </label>
+    </div>
+    <input type="hidden" name="q_options" value="">
+    <input type="hidden" name="q_rows" value="">
     <div class="q-row__foot">
       <label class="inline-check">
         <input type="checkbox" onchange="syncReq(this)">
@@ -124,6 +168,14 @@
   </div>
 </template>
 
+<template id="columnTemplate">
+  <div class="choice-item">
+    <input type="text" class="column-input" placeholder="Column header">
+    <button type="button" class="icon-btn icon-btn--danger"
+            title="Remove column" onclick="removeChoice(this)">&times;</button>
+  </div>
+</template>
+
 <script>
 function addQuestion() {
   const tpl = document.getElementById('qTemplate');
@@ -136,31 +188,41 @@ function syncReq(cb) {
 }
 function onTypeChange(sel) {
   const row = sel.closest('.q-row');
-  const editor = row.querySelector('.choice-editor');
-  const isChoice = sel.value === 'choice';
-  editor.hidden = !isChoice;
-  // Seed two empty choices the first time choice is selected.
-  if (isChoice && !editor.querySelector('.choice-item')) {
-    addChoice(editor.querySelector('button'));
-    addChoice(editor.querySelector('button'));
+  const choiceEd = row.querySelector('.choice-editor');
+  const tableEd = row.querySelector('.table-editor');
+  choiceEd.hidden = sel.value !== 'choice';
+  tableEd.hidden = sel.value !== 'table';
+  if (sel.value === 'choice' && !choiceEd.querySelector('.choice-item')) {
+    addChoice(choiceEd.querySelector('button'));
+    addChoice(choiceEd.querySelector('button'));
+  }
+  if (sel.value === 'table' && !tableEd.querySelector('.choice-item')) {
+    addColumn(tableEd.querySelector('button'));
+    addColumn(tableEd.querySelector('button'));
   }
 }
 function addChoice(btn) {
-  const editor = btn.closest('.choice-editor');
   const tpl = document.getElementById('choiceTemplate');
-  editor.querySelector('.choice-list').appendChild(tpl.content.cloneNode(true));
+  btn.closest('.choice-editor').querySelector('.choice-list')
+    .appendChild(tpl.content.cloneNode(true));
+}
+function addColumn(btn) {
+  const tpl = document.getElementById('columnTemplate');
+  btn.closest('.table-editor').querySelector('.choice-list')
+    .appendChild(tpl.content.cloneNode(true));
 }
 function removeChoice(btn) {
   btn.closest('.choice-item').remove();
 }
-// Roll each choice editor's inputs into the hidden pipe-joined q_options field
-// the backend already understands. Validate that choice questions have >= 2
-// non-empty options.
+// Roll the visible editors into the hidden q_options / q_rows fields the backend
+// reads. Validate choice (>= 2 options) and table (>= 1 column).
 function prepareSubmit() {
-  const rows = document.querySelectorAll('.q-row');
-  for (const row of rows) {
+  for (const row of document.querySelectorAll('.q-row')) {
     const type = row.querySelector('select[name=q_type]').value;
-    const hidden = row.querySelector('input[name=q_options]');
+    const opts = row.querySelector('input[name=q_options]');
+    const rowsField = row.querySelector('input[name=q_rows]');
+    opts.value = '';
+    rowsField.value = '';
     if (type === 'choice') {
       const vals = [...row.querySelectorAll('.choice-input')]
         .map(i => i.value.trim()).filter(v => v.length);
@@ -172,9 +234,21 @@ function prepareSubmit() {
         alert('Answer choices cannot contain the "|" character.');
         return false;
       }
-      hidden.value = vals.join('|');
-    } else {
-      hidden.value = '';
+      opts.value = vals.join('|');
+    } else if (type === 'table') {
+      const cols = [...row.querySelectorAll('.column-input')]
+        .map(i => i.value.trim()).filter(v => v.length);
+      if (cols.length < 1) {
+        alert('Table questions need at least one column.');
+        return false;
+      }
+      if (cols.some(v => v.includes('|'))) {
+        alert('Column headers cannot contain the "|" character.');
+        return false;
+      }
+      const nrows = parseInt(row.querySelector('.rows-input').value, 10) || 1;
+      opts.value = cols.join('|');
+      rowsField.value = String(Math.max(1, Math.min(nrows, 50)));
     }
   }
   return true;

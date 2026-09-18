@@ -22,7 +22,9 @@ Open http://127.0.0.1:9900 and log in at `/login`.
 ## How it works
 
 - **Admin** logs in, then creates questionnaires (in-app builder, mixed question
-  types) or uploads document templates (PDF/Word).
+  types: short text, number, date, yes/no, multiple choice, and **table** with
+  admin-defined columns and a fixed number of rows) or uploads document
+  templates (PDF/Word).
 - Each template has a **Share** button. Enter a client's first and last name,
   and optionally set how many days the link stays valid (defaults to
   `LINK_EXPIRY_DAYS`), to generate a unique link. A **Copy link** button copies

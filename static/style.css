@@ -262,6 +262,17 @@ td .btn-row { flex-wrap: nowrap; }
 .choice-item .icon-btn { width: 32px; height: 32px; flex: none; }
 .choice-item .icon-btn svg { width: 16px; height: 16px; }
 
+/* Table (grid) answer inputs on the guest questionnaire */
+.answer-grid { width: 100%; }
+.answer-grid th { background: var(--bg-tint); padding: 8px 10px; font-size: .78rem;
+  text-transform: uppercase; letter-spacing: .05em; color: var(--muted);
+  font-weight: 700; border-bottom: 1px solid var(--line); }
+.answer-grid td { padding: 4px; border-bottom: 1px solid var(--line);
+  vertical-align: middle; }
+.answer-grid input { margin-top: 0; border: 1px solid transparent;
+  border-radius: var(--radius-sm); background: #fff; }
+.answer-grid input:focus { border-color: var(--brand); }
+
 /* ---------- Steps (guest document) ---------- */
 .steps { list-style: none; padding: 0; margin: 16px 0; counter-reset: step; }
 .steps li { position: relative; padding-inline-start: 44px; margin: 14px 0;

@@ -153,6 +153,109 @@ def test_unknown_type_falls_back_to_text(logged_in_client):
     assert q["questions"][0]["type"] == "text"
 
 
+def test_create_table_question_saves_columns_and_rows(logged_in_client):
+    c, app = logged_in_client
+    c.post("/admin/questionnaires/new", data={
+        "name": "Meds",
+        "q_prompt": ["List medications"],
+        "q_type": ["table"],
+        "q_required_flag": ["1"],
+        "q_options": ["Medication|Dose|Frequency"],
+        "q_rows": ["3"],
+    }, follow_redirects=True)
+    q = [x for x in app.config["STORE"].list_questionnaires()
+         if x["name"] == "Meds"][0]
+    tq = q["questions"][0]
+    assert tq["type"] == "table"
+    assert tq["columns"] == ["Medication", "Dose", "Frequency"]
+    assert tq["rows"] == 3
+
+
+def test_table_row_count_is_clamped(logged_in_client):
+    c, app = logged_in_client
+    c.post("/admin/questionnaires/new", data={
+        "name": "Big", "q_prompt": ["T"], "q_type": ["table"],
+        "q_required_flag": ["0"], "q_options": ["A|B"], "q_rows": ["999"],
+    }, follow_redirects=True)
+    q = [x for x in app.config["STORE"].list_questionnaires()
+         if x["name"] == "Big"][0]
+    assert q["questions"][0]["rows"] == 50  # clamped to max
+
+
+def test_table_without_columns_falls_back_to_text(logged_in_client):
+    c, app = logged_in_client
+    c.post("/admin/questionnaires/new", data={
+        "name": "Empty", "q_prompt": ["T"], "q_type": ["table"],
+        "q_required_flag": ["0"], "q_options": [""], "q_rows": ["3"],
+    }, follow_redirects=True)
+    q = [x for x in app.config["STORE"].list_questionnaires()
+         if x["name"] == "Empty"][0]
+    assert q["questions"][0]["type"] == "text"
+    assert "columns" not in q["questions"][0]
+
+
+def test_guest_renders_table_grid(logged_in_client, settings):
+    from links import make_link_token
+    c, app = logged_in_client
+    qid = app.config["STORE"].create_questionnaire(name="Grid", questions=[
+        {"prompt": "Meds", "type": "table", "required": True,
+         "columns": ["Medication", "Dose"], "rows": 2}])
+    token = make_link_token(settings.SECRET_KEY, kind="questionnaire",
+                            template_id=qid, first_name="Jane", last_name="Doe",
+                            expiry_days=7)
+    html = c.get(f"/c/{token}").get_data(as_text=True)
+    assert "Medication" in html and "Dose" in html
+    # 2 rows x 2 columns = 4 cell inputs.
+    assert html.count('name="answer_0_r') == 4
+
+
+def test_table_required_needs_all_cells(logged_in_client, settings):
+    from links import make_link_token
+    c, app = logged_in_client
+    qid = app.config["STORE"].create_questionnaire(name="Grid2", questions=[
+        {"prompt": "Meds", "type": "table", "required": True,
+         "columns": ["Medication", "Dose"], "rows": 2}])
+    token = make_link_token(settings.SECRET_KEY, kind="questionnaire",
+                            template_id=qid, first_name="Jane", last_name="Doe",
+                            expiry_days=7)
+    # Only one cell filled -> blocked.
+    partial = c.post(f"/c/{token}", data={"answer_0_r0_c0": "Aspirin"})
+    assert "required" in partial.get_data(as_text=True).lower()
+    # All four cells filled -> accepted.
+    full = c.post(f"/c/{token}", data={
+        "answer_0_r0_c0": "Aspirin", "answer_0_r0_c1": "100mg",
+        "answer_0_r1_c0": "Metformin", "answer_0_r1_c1": "500mg"})
+    assert full.status_code == 200
+
+
+def test_table_answer_in_email_and_pdf(logged_in_client, settings):
+    import email
+    import glob
+    import os
+    from io import BytesIO
+    from pypdf import PdfReader
+    from links import make_link_token
+    c, app = logged_in_client
+    qid = app.config["STORE"].create_questionnaire(name="Grid3", questions=[
+        {"prompt": "Meds", "type": "table", "required": True,
+         "columns": ["Medication", "Dose"], "rows": 1}])
+    token = make_link_token(settings.SECRET_KEY, kind="questionnaire",
+                            template_id=qid, first_name="Jane", last_name="Doe",
+                            expiry_days=7)
+    c.post(f"/c/{token}", data={"answer_0_r0_c0": "Aspirin",
+                                "answer_0_r0_c1": "100mg"})
+    eml = sorted(glob.glob(os.path.join(settings.OUTBOX_DIR, "*.eml")))[-1]
+    msg = email.message_from_bytes(open(eml, "rb").read())
+    body = [p for p in msg.walk()
+            if p.get_content_type() == "text/plain"][0]
+    text = body.get_payload(decode=True).decode("utf-8")
+    assert "Medication | Dose" in text
+    assert "Aspirin | 100mg" in text
+    pdf = [p for p in msg.walk()
+           if p.get_content_type() == "application/pdf"][0]
+    assert PdfReader(BytesIO(pdf.get_payload(decode=True))).pages
+
+
 def test_delete_questionnaire(logged_in_client):
     c, app = logged_in_client
     qid = app.config["STORE"].create_questionnaire(name="X", questions=[])
