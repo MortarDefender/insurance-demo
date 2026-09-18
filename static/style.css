@@ -273,6 +273,11 @@ td .btn-row { flex-wrap: nowrap; }
   border-radius: var(--radius-sm); background: #fff; }
 .answer-grid input:focus { border-color: var(--brand); }
 
+/* Live table preview inside the builder */
+.table-preview .table-wrap { margin: 0; }
+.table-preview input[disabled] { background: var(--bg-tint);
+  border: 1px solid var(--line); cursor: default; }
+
 /* ---------- Steps (guest document) ---------- */
 .steps { list-style: none; padding: 0; margin: 16px 0; counter-reset: step; }
 .steps li { position: relative; padding-inline-start: 44px; margin: 14px 0;

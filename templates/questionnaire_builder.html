@@ -68,10 +68,10 @@
               {% for col in q.columns %}
               <div class="choice-item">
                 <input type="text" class="column-input" value="{{ col }}"
-                       placeholder="Column header">
+                       placeholder="Column header" oninput="onTableEdit(this)">
                 <button type="button" class="icon-btn icon-btn--danger"
-                        title="Remove column" onclick="removeChoice(this)">
-                  &times;</button>
+                        title="Remove column"
+                        onclick="removeColumn(this)">&times;</button>
               </div>
               {% endfor %}
             {% endif %}
@@ -80,8 +80,11 @@
                   onclick="addColumn(this)">+ Add column</button>
           <label style="max-width:180px">Number of rows
             <input type="number" class="rows-input" min="1" max="50"
-                   value="{{ q.rows if q.type == 'table' and q.rows else 3 }}">
+                   value="{{ q.rows if q.type == 'table' and q.rows else 3 }}"
+                   oninput="onTableEdit(this)">
           </label>
+          <p class="field-hint" style="margin:12px 0 4px">Preview</p>
+          <div class="table-preview"></div>
         </div>
 
         <!-- Hidden fields the backend reads; filled by JS on submit. One each
@@ -144,8 +147,11 @@
       <button type="button" class="btn btn--sm secondary"
               onclick="addColumn(this)">+ Add column</button>
       <label style="max-width:180px">Number of rows
-        <input type="number" class="rows-input" min="1" max="50" value="3">
+        <input type="number" class="rows-input" min="1" max="50" value="3"
+               oninput="onTableEdit(this)">
       </label>
+      <p class="field-hint" style="margin:12px 0 4px">Preview</p>
+      <div class="table-preview"></div>
     </div>
     <input type="hidden" name="q_options" value="">
     <input type="hidden" name="q_rows" value="">
@@ -170,9 +176,10 @@
 
 <template id="columnTemplate">
   <div class="choice-item">
-    <input type="text" class="column-input" placeholder="Column header">
+    <input type="text" class="column-input" placeholder="Column header"
+           oninput="onTableEdit(this)">
     <button type="button" class="icon-btn icon-btn--danger"
-            title="Remove column" onclick="removeChoice(this)">&times;</button>
+            title="Remove column" onclick="removeColumn(this)">&times;</button>
   </div>
 </template>
 
@@ -200,6 +207,7 @@ function onTypeChange(sel) {
     addColumn(tableEd.querySelector('button'));
     addColumn(tableEd.querySelector('button'));
   }
+  if (sel.value === 'table') renderTablePreview(tableEd);
 }
 function addChoice(btn) {
   const tpl = document.getElementById('choiceTemplate');
@@ -208,11 +216,57 @@ function addChoice(btn) {
 }
 function addColumn(btn) {
   const tpl = document.getElementById('columnTemplate');
-  btn.closest('.table-editor').querySelector('.choice-list')
-    .appendChild(tpl.content.cloneNode(true));
+  const editor = btn.closest('.table-editor');
+  editor.querySelector('.choice-list').appendChild(tpl.content.cloneNode(true));
+  renderTablePreview(editor);
 }
 function removeChoice(btn) {
   btn.closest('.choice-item').remove();
+}
+function removeColumn(btn) {
+  const editor = btn.closest('.table-editor');
+  btn.closest('.choice-item').remove();
+  renderTablePreview(editor);
+}
+// Called whenever a column header or the row count changes.
+function onTableEdit(el) {
+  renderTablePreview(el.closest('.table-editor'));
+}
+// Draw a live preview grid: header row from the column inputs, plus the
+// configured number of empty rows. Mirrors the client's view, RTL-aware.
+function renderTablePreview(editor) {
+  const preview = editor.querySelector('.table-preview');
+  if (!preview) return;
+  const cols = [...editor.querySelectorAll('.column-input')]
+    .map(i => i.value.trim());
+  const nrows = Math.max(1, Math.min(
+    parseInt(editor.querySelector('.rows-input').value, 10) || 1, 50));
+  const hasHeader = cols.some(c => c.length);
+  if (!hasHeader) {
+    preview.innerHTML =
+      '<p class="field-hint">Add a column to see the preview.</p>';
+    return;
+  }
+  const rtl = /[\u0590-\u05FF\u0600-\u06FF]/.test(cols.join(' '));
+  const order = rtl ? [...cols.keys()].reverse() : [...cols.keys()];
+  let html = '<div class="table-wrap"><table class="answer-grid"><thead><tr>';
+  for (const i of order) html += '<th>' + escapeHtml(cols[i] || '-') + '</th>';
+  html += '</tr></thead><tbody>';
+  for (let r = 0; r < nrows; r++) {
+    html += '<tr>';
+    for (let i = 0; i < cols.length; i++) {
+      html += '<td><input type="text" disabled></td>';
+    }
+    html += '</tr>';
+  }
+  html += '</tbody></table></div>';
+  preview.innerHTML = html;
+  preview.firstElementChild.setAttribute('dir', rtl ? 'rtl' : 'ltr');
+}
+function escapeHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
 }
 // Roll the visible editors into the hidden q_options / q_rows fields the backend
 // reads. Validate choice (>= 2 options) and table (>= 1 column).
@@ -253,5 +307,14 @@ function prepareSubmit() {
   }
   return true;
 }
+// Render previews for any table questions already present (edit mode).
+document.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('.q-row').forEach(function (row) {
+    const sel = row.querySelector('select[name=q_type]');
+    if (sel && sel.value === 'table') {
+      renderTablePreview(row.querySelector('.table-editor'));
+    }
+  });
+});
 </script>
 {% endblock %}
