@@ -251,6 +251,16 @@ td .btn-row { flex-wrap: nowrap; }
 .inline-check { display: flex; align-items: center; margin-top: 0;
   font-weight: 600; }
 
+/* Choice editor (multiple-choice options) */
+.choice-editor { margin-top: 14px; padding: 14px; border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-sm); background: #fff; }
+.choice-list { display: flex; flex-direction: column; gap: 8px;
+  margin-bottom: 10px; }
+.choice-item { display: flex; align-items: center; gap: 8px; }
+.choice-item .choice-input { margin-top: 0; }
+.choice-item .icon-btn { width: 32px; height: 32px; flex: none; }
+.choice-item .icon-btn svg { width: 16px; height: 16px; }
+
 /* ---------- Steps (guest document) ---------- */
 .steps { list-style: none; padding: 0; margin: 16px 0; counter-reset: step; }
 .steps li { position: relative; padding-inline-start: 44px; margin: 14px 0;

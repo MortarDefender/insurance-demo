@@ -10,7 +10,7 @@
   <p class="help">Add questions of any type. Mark the ones clients must answer.</p>
 </div>
 
-<form method="post">
+<form method="post" onsubmit="return prepareSubmit()">
   <div class="card">
     <label>Questionnaire name
       <input type="text" name="name"
@@ -27,16 +27,38 @@
           <label>Prompt
             <input type="text" name="q_prompt" value="{{ q.prompt }}"></label>
           <label>Type
-            <select name="q_type" onchange="toggleOptions(this)">
-              {% for t in ["text","choice","yesno","number","date"] %}
-              <option value="{{ t }}" {{ "selected" if q.type==t }}>{{ t }}</option>
+            <select name="q_type" onchange="onTypeChange(this)">
+              {% for val, lbl in [("text","Short text"),("number","Number"),
+                                  ("date","Date"),("yesno","Yes / No"),
+                                  ("choice","Multiple choice")] %}
+              <option value="{{ val }}" {{ "selected" if q.type==val }}>{{ lbl }}</option>
               {% endfor %}
             </select>
           </label>
         </div>
-        <label>Options (for choice, separate with | )
-          <input type="text" name="q_options"
-            value="{{ q.options|join('|') if q.options else '' }}"></label>
+
+        <div class="choice-editor" {{ '' if q.type == 'choice' else 'hidden' }}>
+          <p class="field-hint" style="margin-bottom:6px">Answer choices the
+            client can pick from:</p>
+          <div class="choice-list">
+            {% if q.type == 'choice' and q.options %}
+              {% for opt in q.options %}
+              <div class="choice-item">
+                <input type="text" class="choice-input" value="{{ opt }}"
+                       placeholder="Choice text">
+                <button type="button" class="icon-btn icon-btn--danger"
+                        title="Remove choice" onclick="removeChoice(this)">
+                  &times;</button>
+              </div>
+              {% endfor %}
+            {% endif %}
+          </div>
+          <button type="button" class="btn btn--sm secondary"
+                  onclick="addChoice(this)">+ Add choice</button>
+          <input type="hidden" name="q_options"
+                 value="{{ q.options|join('|') if q.options else '' }}">
+        </div>
+
         <div class="q-row__foot">
           <label class="inline-check">
             <input type="checkbox" onchange="syncReq(this)"
@@ -66,17 +88,23 @@
     <div class="q-grid">
       <label>Prompt <input type="text" name="q_prompt"></label>
       <label>Type
-        <select name="q_type" onchange="toggleOptions(this)">
-          <option value="text">text</option>
-          <option value="choice">choice</option>
-          <option value="yesno">yesno</option>
-          <option value="number">number</option>
-          <option value="date">date</option>
+        <select name="q_type" onchange="onTypeChange(this)">
+          <option value="text">Short text</option>
+          <option value="number">Number</option>
+          <option value="date">Date</option>
+          <option value="yesno">Yes / No</option>
+          <option value="choice">Multiple choice</option>
         </select>
       </label>
     </div>
-    <label>Options (for choice, separate with | )
-      <input type="text" name="q_options"></label>
+    <div class="choice-editor" hidden>
+      <p class="field-hint" style="margin-bottom:6px">Answer choices the client
+        can pick from:</p>
+      <div class="choice-list"></div>
+      <button type="button" class="btn btn--sm secondary"
+              onclick="addChoice(this)">+ Add choice</button>
+      <input type="hidden" name="q_options" value="">
+    </div>
     <div class="q-row__foot">
       <label class="inline-check">
         <input type="checkbox" onchange="syncReq(this)">
@@ -85,6 +113,14 @@
       <button type="button" class="btn btn--sm danger"
               onclick="this.closest('.q-row').remove()">Remove</button>
     </div>
+  </div>
+</template>
+
+<template id="choiceTemplate">
+  <div class="choice-item">
+    <input type="text" class="choice-input" placeholder="Choice text">
+    <button type="button" class="icon-btn icon-btn--danger"
+            title="Remove choice" onclick="removeChoice(this)">&times;</button>
   </div>
 </template>
 
@@ -98,6 +134,50 @@ function syncReq(cb) {
   cb.parentElement.querySelector('input[type=hidden]').value =
     cb.checked ? '1' : '0';
 }
-function toggleOptions(sel) { /* options field always visible for simplicity */ }
+function onTypeChange(sel) {
+  const row = sel.closest('.q-row');
+  const editor = row.querySelector('.choice-editor');
+  const isChoice = sel.value === 'choice';
+  editor.hidden = !isChoice;
+  // Seed two empty choices the first time choice is selected.
+  if (isChoice && !editor.querySelector('.choice-item')) {
+    addChoice(editor.querySelector('button'));
+    addChoice(editor.querySelector('button'));
+  }
+}
+function addChoice(btn) {
+  const editor = btn.closest('.choice-editor');
+  const tpl = document.getElementById('choiceTemplate');
+  editor.querySelector('.choice-list').appendChild(tpl.content.cloneNode(true));
+}
+function removeChoice(btn) {
+  btn.closest('.choice-item').remove();
+}
+// Roll each choice editor's inputs into the hidden pipe-joined q_options field
+// the backend already understands. Validate that choice questions have >= 2
+// non-empty options.
+function prepareSubmit() {
+  const rows = document.querySelectorAll('.q-row');
+  for (const row of rows) {
+    const type = row.querySelector('select[name=q_type]').value;
+    const hidden = row.querySelector('input[name=q_options]');
+    if (type === 'choice') {
+      const vals = [...row.querySelectorAll('.choice-input')]
+        .map(i => i.value.trim()).filter(v => v.length);
+      if (vals.length < 2) {
+        alert('Multiple choice questions need at least two answer choices.');
+        return false;
+      }
+      if (vals.some(v => v.includes('|'))) {
+        alert('Answer choices cannot contain the "|" character.');
+        return false;
+      }
+      hidden.value = vals.join('|');
+    } else {
+      hidden.value = '';
+    }
+  }
+  return true;
+}
 </script>
 {% endblock %}

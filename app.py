@@ -86,12 +86,21 @@ def register_admin_routes(app):
             if not prompt:
                 continue
             qtype = types[i] if i < len(types) else "text"
+            valid_types = ("text", "number", "date", "yesno", "choice")
+            if qtype not in valid_types:
+                qtype = "text"
             opts_raw = options[i] if i < len(options) else ""
             opts = [o.strip() for o in opts_raw.split("|") if o.strip()]
             is_required = (req_flags[i] == "1") if i < len(req_flags) else False
             q = {"prompt": prompt, "type": qtype, "required": is_required}
             if qtype == "choice":
-                q["options"] = opts
+                # A choice needs real options. If none were provided (e.g. the
+                # client-side editor was bypassed), fall back to free text so the
+                # client is never shown an empty, unanswerable dropdown.
+                if len(opts) >= 1:
+                    q["options"] = opts
+                else:
+                    q["type"] = "text"
             questions.append(q)
         return questions
 
