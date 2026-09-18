@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% import "_icons.html" as ic %}
 {% block title %}Admin - Templates{% endblock %}
 {% block appbar_actions %}
   <span class="muted" style="color:#b9c6dc">Admin</span>
@@ -14,8 +15,8 @@
 
 <div class="section-title">
   <h2>Questionnaires</h2>
-  <a class="btn btn--sm" href="{{ url_for('questionnaire_new') }}">
-    + New questionnaire</a>
+  <a class="icon-btn icon-btn--primary" href="{{ url_for('questionnaire_new') }}"
+     title="New questionnaire" aria-label="New questionnaire">{{ ic.plus() }}</a>
 </div>
 <div class="table-wrap">
 <table>
@@ -27,15 +28,18 @@
       <td><span class="badge badge--count">{{ q.questions|length }}</span></td>
       <td>
         <div class="btn-row btn-row--end">
-          <button class="btn btn--sm"
+          <button class="icon-btn icon-btn--primary"
+            title="Share" aria-label="Share"
             onclick="openShare('questionnaire','{{ q.id }}','{{ q.name }}')">
-            Share</button>
-          <a class="btn btn--sm secondary"
-             href="{{ url_for('questionnaire_edit', qid=q.id) }}">Edit</a>
-          <form method="post" style="display:inline"
+            {{ ic.share() }}</button>
+          <a class="icon-btn" title="Edit" aria-label="Edit"
+             href="{{ url_for('questionnaire_edit', qid=q.id) }}">{{ ic.edit() }}</a>
+          <form method="post" class="icon-btn__form"
                 action="{{ url_for('questionnaire_delete', qid=q.id) }}">
-            <button class="btn btn--sm danger" onclick="return confirm('Delete this questionnaire?')">
-              Delete</button>
+            <button class="icon-btn icon-btn--danger" title="Delete"
+              aria-label="Delete"
+              onclick="return confirm('Delete this questionnaire?')">
+              {{ ic.trash() }}</button>
           </form>
         </div>
       </td>
@@ -49,8 +53,8 @@
 
 <div class="section-title">
   <h2>Documents</h2>
-  <a class="btn btn--sm" href="{{ url_for('document_new') }}">
-    + Upload document</a>
+  <a class="icon-btn icon-btn--primary" href="{{ url_for('document_new') }}"
+     title="Upload document" aria-label="Upload document">{{ ic.plus() }}</a>
 </div>
 <div class="table-wrap">
 <table>
@@ -62,13 +66,16 @@
       <td class="muted">{{ d.original_filename }}</td>
       <td>
         <div class="btn-row btn-row--end">
-          <button class="btn btn--sm"
+          <button class="icon-btn icon-btn--primary"
+            title="Share" aria-label="Share"
             onclick="openShare('document','{{ d.id }}','{{ d.display_name }}')">
-            Share</button>
-          <form method="post" style="display:inline"
+            {{ ic.share() }}</button>
+          <form method="post" class="icon-btn__form"
                 action="{{ url_for('document_delete', did=d.id) }}">
-            <button class="btn btn--sm danger" onclick="return confirm('Delete this document?')">
-              Delete</button>
+            <button class="icon-btn icon-btn--danger" title="Delete"
+              aria-label="Delete"
+              onclick="return confirm('Delete this document?')">
+              {{ ic.trash() }}</button>
           </form>
         </div>
       </td>
