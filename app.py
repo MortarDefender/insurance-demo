@@ -58,6 +58,7 @@ def create_app(settings=None):
             "admin_list.html",
             questionnaires=store.list_questionnaires(),
             documents=store.list_documents(),
+            settings=settings,
         )
 
     register_admin_routes(app)
@@ -167,10 +168,23 @@ def register_admin_routes(app):
             return jsonify({"error": "bad request"}), 400
         if not first or not last:
             return jsonify({"error": "first and last name required"}), 400
+        # Per-client link expiry. Defaults to the global setting; clamped to a
+        # sane range so a typo can't create a 100-year or already-dead link.
+        default_days = settings.LINK_EXPIRY_DAYS
+        raw_days = request.form.get("expiry_days", "").strip()
+        if raw_days == "":
+            expiry_days = default_days
+        else:
+            try:
+                expiry_days = int(raw_days)
+            except ValueError:
+                return jsonify({"error": "expiry days must be a whole number"}), 400
+            if expiry_days < 1 or expiry_days > 365:
+                return jsonify({"error": "expiry days must be between 1 and 365"}), 400
         token = make_link_token(settings.SECRET_KEY, kind=kind,
                                 template_id=template_id, first_name=first,
                                 last_name=last,
-                                expiry_days=settings.LINK_EXPIRY_DAYS)
+                                expiry_days=expiry_days)
         link = url_for("guest", token=token, _external=True)
         return jsonify({"link": link})
 

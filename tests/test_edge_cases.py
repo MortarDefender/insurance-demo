@@ -196,3 +196,51 @@ def test_client_name_cannot_inject_email_headers(app_and_client, settings):
     for f in glob.glob(os.path.join(settings.OUTBOX_DIR, "*.eml")):
         raw = open(f, "rb").read()
         assert b"\nBcc: attacker" not in raw
+
+
+def _login(c):
+    return c.post("/login", data={"password": "testpass"}, follow_redirects=True)
+
+
+def test_share_uses_custom_expiry(app_and_client, settings):
+    """A per-client expiry entered in the Share modal is honored on the link."""
+    app, c = app_and_client
+    qid = app.config["STORE"].create_questionnaire(name="HC", questions=[])
+    _login(c)
+    resp = c.post("/admin/share", data={
+        "kind": "questionnaire", "template_id": qid,
+        "first_name": "A", "last_name": "B", "expiry_days": "30",
+    })
+    assert resp.status_code == 200
+    from links import read_link_token
+    token = resp.get_json()["link"].rsplit("/c/", 1)[1]
+    data = read_link_token(settings.SECRET_KEY, token, max_age_days=1)
+    assert data["expiry_days"] == 30
+
+
+def test_share_defaults_expiry_when_blank(app_and_client, settings):
+    app, c = app_and_client
+    qid = app.config["STORE"].create_questionnaire(name="HC", questions=[])
+    settings.LINK_EXPIRY_DAYS = 7
+    _login(c)
+    resp = c.post("/admin/share", data={
+        "kind": "questionnaire", "template_id": qid,
+        "first_name": "A", "last_name": "B", "expiry_days": "",
+    })
+    from links import read_link_token
+    token = resp.get_json()["link"].rsplit("/c/", 1)[1]
+    data = read_link_token(settings.SECRET_KEY, token, max_age_days=1)
+    assert data["expiry_days"] == 7
+
+
+@pytest.mark.parametrize("bad", ["0", "366", "-3", "abc", "3.5"])
+def test_share_rejects_bad_expiry(app_and_client, bad):
+    app, c = app_and_client
+    qid = app.config["STORE"].create_questionnaire(name="HC", questions=[])
+    _login(c)
+    resp = c.post("/admin/share", data={
+        "kind": "questionnaire", "template_id": qid,
+        "first_name": "A", "last_name": "B", "expiry_days": bad,
+    })
+    assert resp.status_code == 400
+    assert "expiry" in resp.get_json()["error"].lower()

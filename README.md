@@ -23,10 +23,12 @@ Open http://127.0.0.1:9900 and log in at `/login`.
 
 - **Admin** logs in, then creates questionnaires (in-app builder, mixed question
   types) or uploads document templates (PDF/Word).
-- Each template has a **Share** button. Enter a client's first and last name to
-  generate a unique link.
-- The client's name is encoded inside a **signed, expiring token** in the link.
-  Nothing about the client is written to disk.
+- Each template has a **Share** button. Enter a client's first and last name,
+  and optionally set how many days the link stays valid (defaults to
+  `LINK_EXPIRY_DAYS`), to generate a unique link. A **Copy link** button copies
+  it to the clipboard.
+- The client's name and the link's expiry are encoded inside a **signed,
+  expiring token** in the link. Nothing about the client is written to disk.
 - **Clients** open the link (no login):
   - Questionnaire: answer and submit. Answers are emailed to the admin.
   - Document: download, sign it themselves offline, upload the signed file. The
@@ -40,7 +42,8 @@ Edit `config.py` (never commit it):
 - `ADMIN_PASSWORD` - admin login password.
 - `SECRET_KEY` - long random string; signs links and sessions.
 - `ADMIN_EMAIL` - where results are emailed.
-- `LINK_EXPIRY_DAYS` - how long a client link is valid (default 7).
+- `LINK_EXPIRY_DAYS` - default validity for new links (default 7). The admin can
+  override this per client in the Share dialog (1 to 365 days).
 - `PORT` - local dev server port (default 9900; 5000 is taken by macOS AirPlay).
 - `MAIL_MODE` - `outbox` (local, writes to `outbox/`) or `smtp` (real email).
 - `SMTP_*` - only used in `smtp` mode.

@@ -66,6 +66,10 @@
     <p class="help">Enter the client's name to generate a unique link.</p>
     <label>First name <input type="text" id="firstName"></label>
     <label>Last name <input type="text" id="lastName"></label>
+    <label>Link expires in (days)
+      <input type="number" id="expiryDays" min="1" max="365"
+             value="{{ settings.LINK_EXPIRY_DAYS }}">
+    </label>
     <input type="hidden" id="shareKind">
     <input type="hidden" id="shareTemplateId">
     <div style="margin-top:12px">
@@ -73,6 +77,10 @@
       <button class="btn secondary" onclick="closeShare()">Close</button>
     </div>
     <div id="linkResult" class="link-box" style="display:none"></div>
+    <div id="linkActions" style="display:none; margin-top:8px">
+      <button class="btn" type="button" onclick="copyLink()">Copy link</button>
+      <span id="copyStatus" class="help" style="margin-left:8px"></span>
+    </div>
   </div>
 </div>
 
@@ -83,7 +91,10 @@ function openShare(kind, id, name) {
   document.getElementById('shareTitle').textContent = 'Share: ' + name;
   document.getElementById('firstName').value = '';
   document.getElementById('lastName').value = '';
+  document.getElementById('expiryDays').value = '{{ settings.LINK_EXPIRY_DAYS }}';
   document.getElementById('linkResult').style.display = 'none';
+  document.getElementById('linkActions').style.display = 'none';
+  document.getElementById('copyStatus').textContent = '';
   document.getElementById('shareModal').classList.add('open');
 }
 function closeShare() {
@@ -95,16 +106,47 @@ async function generateLink() {
   body.append('template_id', document.getElementById('shareTemplateId').value);
   body.append('first_name', document.getElementById('firstName').value);
   body.append('last_name', document.getElementById('lastName').value);
+  body.append('expiry_days', document.getElementById('expiryDays').value);
   const resp = await fetch('{{ url_for("admin_share") }}',
     {method: 'POST', body});
   const box = document.getElementById('linkResult');
+  const actions = document.getElementById('linkActions');
+  document.getElementById('copyStatus').textContent = '';
   box.style.display = 'block';
   if (resp.ok) {
     const data = await resp.json();
     box.textContent = data.link;
+    actions.style.display = 'block';
   } else {
-    box.textContent = 'Please enter both first and last name.';
+    let msg = 'Please check the form and try again.';
+    try { const e = await resp.json(); if (e && e.error) msg = e.error; } catch (x) {}
+    box.textContent = msg;
+    actions.style.display = 'none';
   }
+}
+async function copyLink() {
+  const link = document.getElementById('linkResult').textContent;
+  const status = document.getElementById('copyStatus');
+  let ok = false;
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(link);
+      ok = true;
+    }
+  } catch (e) { ok = false; }
+  if (!ok) {
+    // Fallback for non-secure contexts (plain HTTP over a network).
+    const ta = document.createElement('textarea');
+    ta.value = link;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    document.body.removeChild(ta);
+  }
+  status.textContent = ok ? 'Copied to clipboard' : 'Copy failed, select and copy manually';
 }
 </script>
 {% endblock %}
