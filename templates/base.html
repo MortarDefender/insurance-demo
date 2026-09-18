@@ -12,7 +12,7 @@
   {% block appbar %}
   <header class="appbar">
     <div class="appbar__inner">
-      <a class="brand" href="{{ brand_href | default('#') }}">
+      <a class="brand" href="{{ brand_href | default(url_for('home')) }}">
         <span class="brand__mark">M</span>
         <span>
           <span class="brand__name">Meridian</span>

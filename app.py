@@ -48,7 +48,18 @@ def create_app(settings=None):
 
     @app.route("/")
     def home():
-        return redirect(url_for("admin"))
+        company = {
+            "name": getattr(settings, "COMPANY_NAME", "Meridian"),
+            "tagline": getattr(settings, "COMPANY_TAGLINE",
+                               "Insurance Services"),
+            "email": getattr(settings, "CONTACT_EMAIL",
+                             "hello@meridian.example"),
+            "phone": getattr(settings, "CONTACT_PHONE", "+1 (555) 010-2400"),
+            "address": getattr(settings, "CONTACT_ADDRESS",
+                               "100 Market Street, Suite 500, "
+                               "San Francisco, CA"),
+        }
+        return render_template("home.html", company=company)
 
     @app.route("/admin")
     @login_required

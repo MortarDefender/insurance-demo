@@ -15,6 +15,18 @@ def test_admin_redirects_to_login_when_logged_out(client):
     assert "/login" in resp.headers["Location"]
 
 
+def test_home_is_public_and_shows_landing(client):
+    # The landing page must be reachable with no session/cookies.
+    resp = client.get("/", follow_redirects=False)
+    assert resp.status_code == 200
+    body = resp.get_data(as_text=True)
+    assert 'id="about"' in body
+    assert 'id="contact"' in body
+    assert 'id="services"' in body
+    # Links into the app are present.
+    assert "/login" in body
+
+
 def test_login_with_wrong_password_shows_error(client):
     resp = client.post("/login", data={"password": "wrong"},
                        follow_redirects=True)

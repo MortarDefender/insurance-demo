@@ -29,3 +29,10 @@ SMTP_USE_TLS = True
 # Upload limits for signed documents.
 MAX_UPLOAD_MB = 15
 ALLOWED_UPLOAD_EXTENSIONS = ["pdf", "doc", "docx"]
+
+# Public landing page (home page). All optional; sensible defaults apply.
+COMPANY_NAME = "Meridian"
+COMPANY_TAGLINE = "Insurance Services"
+CONTACT_EMAIL = "hello@meridian.example"
+CONTACT_PHONE = "+1 (555) 010-2400"
+CONTACT_ADDRESS = "100 Market Street, Suite 500, San Francisco, CA"
