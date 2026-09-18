@@ -1,5 +1,6 @@
 <!doctype html>
-<html lang="{{ html_lang | default('en') }}">
+{% set _dir = dir | default('ltr') %}
+<html lang="{{ 'he' if _dir == 'rtl' else 'en' }}" dir="{{ _dir }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">

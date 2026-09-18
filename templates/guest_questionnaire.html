@@ -21,14 +21,16 @@
     {% elif question.type == "date" %}
       <input type="date" name="{{ nm }}">
     {% elif question.type == "yesno" %}
+      {% set rtl = (dir | default('ltr')) == 'rtl' %}
       <select name="{{ nm }}">
-        <option value="">-- select --</option>
-        <option value="Yes">Yes</option>
-        <option value="No">No</option>
+        <option value="">{{ '-- בחר --' if rtl else '-- select --' }}</option>
+        <option value="Yes">{{ 'כן' if rtl else 'Yes' }}</option>
+        <option value="No">{{ 'לא' if rtl else 'No' }}</option>
       </select>
     {% elif question.type == "choice" %}
+      {% set rtl = (dir | default('ltr')) == 'rtl' %}
       <select name="{{ nm }}">
-        <option value="">-- select --</option>
+        <option value="">{{ '-- בחר --' if rtl else '-- select --' }}</option>
         {% for opt in question.options %}
         <option value="{{ opt }}">{{ opt }}</option>
         {% endfor %}

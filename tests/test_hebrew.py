@@ -75,26 +75,36 @@ def test_hebrew_questionnaire_page_renders_rtl(app_and_client, settings):
     app, c = app_and_client
     qid = app.config["STORE"].create_questionnaire(
         name="שאלון בריאות",
-        questions=[{"prompt": "מה גילך?", "type": "number", "required": False}])
+        questions=[{"prompt": "מה גילך?", "type": "number", "required": False},
+                   {"prompt": "מעשן?", "type": "yesno", "required": False}])
     token = make_link_token(settings.SECRET_KEY, kind="questionnaire",
                             template_id=qid, first_name="ישראל",
                             last_name="ישראלי", expiry_days=7)
     html = c.get(f"/c/{token}").get_data(as_text=True)
     assert 'dir="rtl"' in html
+    assert 'lang="he"' in html  # <html> reflects Hebrew content
     assert "מה גילך?" in html  # Hebrew prompt present, UTF-8 preserved
+    # Yes/No options are shown in Hebrew, but posted values stay Yes/No so the
+    # email/PDF logic is language-independent.
+    assert "כן" in html and "לא" in html
+    assert 'value="Yes"' in html and 'value="No"' in html
 
 
 def test_english_questionnaire_page_stays_ltr(app_and_client, settings):
     app, c = app_and_client
     qid = app.config["STORE"].create_questionnaire(
         name="Health Review",
-        questions=[{"prompt": "Age", "type": "number", "required": False}])
+        questions=[{"prompt": "Age", "type": "number", "required": False},
+                   {"prompt": "Smoker?", "type": "yesno", "required": False}])
     token = make_link_token(settings.SECRET_KEY, kind="questionnaire",
                             template_id=qid, first_name="Jane",
                             last_name="Doe", expiry_days=7)
     html = c.get(f"/c/{token}").get_data(as_text=True)
     assert 'dir="ltr"' in html
+    assert 'lang="en"' in html
     assert 'dir="rtl"' not in html
+    assert ">Yes<" in html and ">No<" in html  # English options unchanged
+    assert "כן" not in html and "לא" not in html
 
 
 def test_hebrew_submission_emails_valid_hebrew_pdf(app_and_client, settings):

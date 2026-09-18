@@ -325,5 +325,5 @@ def register_guest_routes(app):
 
 if __name__ == "__main__":
     app = create_app()
-    port = getattr(app.config["SETTINGS"], "PORT", 9990)
+    port = getattr(app.config["SETTINGS"], "PORT", 9900)
     app.run(debug=True, port=port)
