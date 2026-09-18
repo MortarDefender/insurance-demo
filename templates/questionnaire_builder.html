@@ -1,37 +1,52 @@
 {% extends "base.html" %}
 {% block title %}Questionnaire builder{% endblock %}
+{% block appbar_actions %}
+  <a href="{{ url_for('admin') }}">Back to templates</a>
+{% endblock %}
 {% block content %}
-<h1>{{ "Edit" if questionnaire else "New" }} questionnaire</h1>
-<form method="post">
-  <label>Name
-    <input type="text" name="name"
-           value="{{ questionnaire.name if questionnaire else '' }}" required>
-  </label>
+<div class="page-head">
+  <p class="eyebrow">Questionnaire builder</p>
+  <h1>{{ "Edit" if questionnaire else "New" }} questionnaire</h1>
+  <p class="help">Add questions of any type. Mark the ones clients must answer.</p>
+</div>
 
-  <h3>Questions</h3>
+<form method="post">
+  <div class="card">
+    <label>Questionnaire name
+      <input type="text" name="name"
+             value="{{ questionnaire.name if questionnaire else '' }}" required>
+    </label>
+  </div>
+
+  <div class="section-title"><h2>Questions</h2></div>
   <div id="questions">
     {% if questionnaire %}
       {% for q in questionnaire.questions %}
       <div class="q-row">
-        <label>Prompt
-          <input type="text" name="q_prompt" value="{{ q.prompt }}"></label>
-        <label>Type
-          <select name="q_type" onchange="toggleOptions(this)">
-            {% for t in ["text","choice","yesno","number","date"] %}
-            <option value="{{ t }}" {{ "selected" if q.type==t }}>{{ t }}</option>
-            {% endfor %}
-          </select>
-        </label>
+        <div class="q-grid">
+          <label>Prompt
+            <input type="text" name="q_prompt" value="{{ q.prompt }}"></label>
+          <label>Type
+            <select name="q_type" onchange="toggleOptions(this)">
+              {% for t in ["text","choice","yesno","number","date"] %}
+              <option value="{{ t }}" {{ "selected" if q.type==t }}>{{ t }}</option>
+              {% endfor %}
+            </select>
+          </label>
+        </div>
         <label>Options (for choice, separate with | )
           <input type="text" name="q_options"
             value="{{ q.options|join('|') if q.options else '' }}"></label>
-        <label>Required
-          <input type="checkbox" onchange="syncReq(this)"
-                 {{ "checked" if q.required }}>
-          <input type="hidden" name="q_required_flag"
-                 value="{{ '1' if q.required else '0' }}"></label>
-        <button type="button" class="danger"
-                onclick="this.closest('.q-row').remove()">Remove</button>
+        <div class="q-row__foot">
+          <label class="inline-check">
+            <input type="checkbox" onchange="syncReq(this)"
+                   {{ "checked" if q.required }}>
+            Required
+            <input type="hidden" name="q_required_flag"
+                   value="{{ '1' if q.required else '0' }}"></label>
+          <button type="button" class="btn btn--sm danger"
+                  onclick="this.closest('.q-row').remove()">Remove</button>
+        </div>
       </div>
       {% endfor %}
     {% endif %}
@@ -39,31 +54,37 @@
 
   <button type="button" class="btn secondary" onclick="addQuestion()">
     + Add question</button>
-  <div style="margin-top:16px">
-    <button type="submit" class="btn">Save</button>
+
+  <div class="btn-row" style="margin-top:24px">
+    <button type="submit" class="btn">Save questionnaire</button>
     <a class="btn secondary" href="{{ url_for('admin') }}">Cancel</a>
   </div>
 </form>
 
 <template id="qTemplate">
   <div class="q-row">
-    <label>Prompt <input type="text" name="q_prompt"></label>
-    <label>Type
-      <select name="q_type" onchange="toggleOptions(this)">
-        <option value="text">text</option>
-        <option value="choice">choice</option>
-        <option value="yesno">yesno</option>
-        <option value="number">number</option>
-        <option value="date">date</option>
-      </select>
-    </label>
+    <div class="q-grid">
+      <label>Prompt <input type="text" name="q_prompt"></label>
+      <label>Type
+        <select name="q_type" onchange="toggleOptions(this)">
+          <option value="text">text</option>
+          <option value="choice">choice</option>
+          <option value="yesno">yesno</option>
+          <option value="number">number</option>
+          <option value="date">date</option>
+        </select>
+      </label>
+    </div>
     <label>Options (for choice, separate with | )
       <input type="text" name="q_options"></label>
-    <label>Required
-      <input type="checkbox" onchange="syncReq(this)">
-      <input type="hidden" name="q_required_flag" value="0"></label>
-    <button type="button" class="danger"
-            onclick="this.closest('.q-row').remove()">Remove</button>
+    <div class="q-row__foot">
+      <label class="inline-check">
+        <input type="checkbox" onchange="syncReq(this)">
+        Required
+        <input type="hidden" name="q_required_flag" value="0"></label>
+      <button type="button" class="btn btn--sm danger"
+              onclick="this.closest('.q-row').remove()">Remove</button>
+    </div>
   </div>
 </template>
 

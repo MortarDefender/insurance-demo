@@ -1,26 +1,36 @@
 {% extends "base.html" %}
 {% block title %}{{ doc.display_name }}{% endblock %}
+{% block appbar_actions %}{% endblock %}
 {% block content %}
 <div dir="{{ dir | default('ltr') }}">
-<h1 dir="auto">{{ doc.display_name }}</h1>
-<p class="help" dir="auto">{{ greeting | default('Hello') }} {{ first }}</p>
-<p class="help">{{ tr.d_intro }}</p>
-<ol class="steps">
-  <li>{{ tr.d_step_download }}</li>
-  <li>{{ tr.d_step_sign }}</li>
-  <li>{{ tr.d_step_upload }}</li>
-</ol>
+  <div class="guest-hero">
+    <span class="brand__mark">M</span>
+    <h1 dir="auto">{{ doc.display_name }}</h1>
+    <p class="help">{{ greeting | default('Hello') }} {{ first }}</p>
+  </div>
 
-<div class="card">
-  <a class="btn" href="{{ url_for('guest_download', token=token) }}">
-    {{ tr.d_download }}: {{ doc.display_name }}</a>
-</div>
+  <div class="card">
+    <p class="help" style="margin-top:0">{{ tr.d_intro }}</p>
+    <ol class="steps">
+      <li>{{ tr.d_step_download }}</li>
+      <li>{{ tr.d_step_sign }}</li>
+      <li>{{ tr.d_step_upload }}</li>
+    </ol>
+    <a class="btn secondary" href="{{ url_for('guest_download', token=token) }}">
+      &#8681; {{ tr.d_download }}: {{ doc.display_name }}</a>
+  </div>
 
-{% if error %}<div class="flash">{{ error }}</div>{% endif %}
-<form method="post" enctype="multipart/form-data" class="card">
-  <label>{{ tr.d_upload_label }}
-    <input type="file" name="file" accept=".pdf,.doc,.docx" required></label>
-  <button type="submit" class="btn">{{ tr.d_submit }}</button>
-</form>
+  {% if error %}<div class="alert alert--error">{{ error }}</div>{% endif %}
+  <form method="post" enctype="multipart/form-data" class="card">
+    <label style="margin-top:0">{{ tr.d_upload_label }}
+      <input type="file" name="file" accept=".pdf,.doc,.docx" required></label>
+    <button type="submit" class="btn btn--lg" style="margin-top:20px">
+      {{ tr.d_submit }}</button>
+  </form>
+
+  <div class="trust-row">
+    <span><span class="tick">&#10003;</span> {{ tr.sent_securely }}</span>
+    <span><span class="tick">&#10003;</span> {{ tr.not_stored }}</span>
+  </div>
 </div>
 {% endblock %}

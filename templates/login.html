@@ -1,11 +1,18 @@
 {% extends "base.html" %}
 {% block title %}Admin Login{% endblock %}
+{% block appbar_actions %}{% endblock %}
+{% block container_class %}container--narrow{% endblock %}
 {% block content %}
-<h1>Admin Login</h1>
-<form method="post" action="{{ url_for('login') }}">
-  <label>Password
-    <input type="password" name="password" autofocus required>
-  </label>
-  <button type="submit">Log in</button>
-</form>
+<div class="card card--pad-lg" style="margin-top:40px">
+  <p class="eyebrow">Administration</p>
+  <h1>Sign in</h1>
+  <p class="help">Enter your admin password to manage templates and links.</p>
+  <form method="post" action="{{ url_for('login') }}">
+    <label>Password
+      <input type="password" name="password" autofocus required>
+    </label>
+    <button type="submit" class="btn btn--block btn--lg" style="margin-top:20px">
+      Log in</button>
+  </form>
+</div>
 {% endblock %}

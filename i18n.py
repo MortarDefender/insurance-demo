@@ -32,6 +32,8 @@ _STRINGS = {
         "d_bad_type": "That file type is not allowed.",
         # shared
         "greeting": "Hello",
+        "sent_securely": "Sent securely",
+        "not_stored": "Not stored on this site",
         "send_failed": ("Sorry, we could not send your response just now. "
                         "Please try again in a moment."),
         "thank_you_title": "Thank you",
@@ -65,6 +67,8 @@ _STRINGS = {
         "d_choose_file": "אנא בחרו את הקובץ החתום.",
         "d_bad_type": "סוג קובץ זה אינו נתמך.",
         "greeting": "שלום",
+        "sent_securely": "נשלח באופן מאובטח",
+        "not_stored": "לא נשמר באתר זה",
         "send_failed": ("מצטערים, לא הצלחנו לשלוח את תשובתכם כרגע. "
                         "אנא נסו שוב בעוד רגע."),
         "thank_you_title": "תודה",

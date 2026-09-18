@@ -1,90 +1,115 @@
 {% extends "base.html" %}
 {% block title %}Admin - Templates{% endblock %}
-{% block content %}
-<div style="display:flex;justify-content:space-between;align-items:center">
-  <h1>Templates</h1>
+{% block appbar_actions %}
+  <span class="muted" style="color:#b9c6dc">Admin</span>
   <a href="{{ url_for('logout') }}">Log out</a>
+{% endblock %}
+{% block content %}
+<div class="page-head">
+  <p class="eyebrow">Administration</p>
+  <h1>Templates</h1>
+  <p class="help">Create questionnaires and documents, then generate a secure,
+    per-client link to share.</p>
 </div>
 
-<h2 class="section-title">Questionnaires</h2>
-<a class="btn" href="{{ url_for('questionnaire_new') }}">+ New questionnaire</a>
+<div class="section-title">
+  <h2>Questionnaires</h2>
+  <a class="btn btn--sm" href="{{ url_for('questionnaire_new') }}">
+    + New questionnaire</a>
+</div>
+<div class="table-wrap">
 <table>
-  <thead><tr><th>Name</th><th>Questions</th><th>Actions</th></tr></thead>
+  <thead><tr><th>Name</th><th>Questions</th><th style="text-align:end">Actions</th></tr></thead>
   <tbody>
   {% for q in questionnaires %}
     <tr>
-      <td>{{ q.name }}</td>
-      <td>{{ q.questions|length }}</td>
+      <td class="cell-title">{{ q.name }}</td>
+      <td><span class="badge badge--count">{{ q.questions|length }}</span></td>
       <td>
-        <button class="btn"
-          onclick="openShare('questionnaire','{{ q.id }}','{{ q.name }}')">
-          Share</button>
-        <a class="btn secondary"
-           href="{{ url_for('questionnaire_edit', qid=q.id) }}">Edit</a>
-        <form method="post" style="display:inline"
-              action="{{ url_for('questionnaire_delete', qid=q.id) }}">
-          <button class="danger" onclick="return confirm('Delete?')">
-            Delete</button>
-        </form>
+        <div class="btn-row btn-row--end">
+          <button class="btn btn--sm"
+            onclick="openShare('questionnaire','{{ q.id }}','{{ q.name }}')">
+            Share</button>
+          <a class="btn btn--sm secondary"
+             href="{{ url_for('questionnaire_edit', qid=q.id) }}">Edit</a>
+          <form method="post" style="display:inline"
+                action="{{ url_for('questionnaire_delete', qid=q.id) }}">
+            <button class="btn btn--sm danger" onclick="return confirm('Delete this questionnaire?')">
+              Delete</button>
+          </form>
+        </div>
       </td>
     </tr>
   {% else %}
-    <tr><td colspan="3" class="help">No questionnaires yet.</td></tr>
+    <tr class="empty-row"><td colspan="3">No questionnaires yet. Create your first one above.</td></tr>
   {% endfor %}
   </tbody>
 </table>
+</div>
 
-<h2 class="section-title">Documents</h2>
-<a class="btn" href="{{ url_for('document_new') }}">+ Upload document</a>
+<div class="section-title">
+  <h2>Documents</h2>
+  <a class="btn btn--sm" href="{{ url_for('document_new') }}">
+    + Upload document</a>
+</div>
+<div class="table-wrap">
 <table>
-  <thead><tr><th>Name</th><th>File</th><th>Actions</th></tr></thead>
+  <thead><tr><th>Name</th><th>File</th><th style="text-align:end">Actions</th></tr></thead>
   <tbody>
   {% for d in documents %}
     <tr>
-      <td>{{ d.display_name }}</td>
-      <td>{{ d.original_filename }}</td>
+      <td class="cell-title">{{ d.display_name }}</td>
+      <td class="muted">{{ d.original_filename }}</td>
       <td>
-        <button class="btn"
-          onclick="openShare('document','{{ d.id }}','{{ d.display_name }}')">
-          Share</button>
-        <form method="post" style="display:inline"
-              action="{{ url_for('document_delete', did=d.id) }}">
-          <button class="danger" onclick="return confirm('Delete?')">
-            Delete</button>
-        </form>
+        <div class="btn-row btn-row--end">
+          <button class="btn btn--sm"
+            onclick="openShare('document','{{ d.id }}','{{ d.display_name }}')">
+            Share</button>
+          <form method="post" style="display:inline"
+                action="{{ url_for('document_delete', did=d.id) }}">
+            <button class="btn btn--sm danger" onclick="return confirm('Delete this document?')">
+              Delete</button>
+          </form>
+        </div>
       </td>
     </tr>
   {% else %}
-    <tr><td colspan="3" class="help">No documents yet.</td></tr>
+    <tr class="empty-row"><td colspan="3">No documents yet. Upload your first one above.</td></tr>
   {% endfor %}
   </tbody>
 </table>
+</div>
 
 <div class="modal-backdrop" id="shareModal">
   <div class="modal">
-    <h3 id="shareTitle">Share</h3>
-    <p class="help">Enter the client's name to generate a unique link.</p>
+    <div class="modal__head">
+      <h3 id="shareTitle">Share</h3>
+      <button class="modal__close" type="button" onclick="closeShare()"
+              aria-label="Close">&times;</button>
+    </div>
+    <p class="help">Enter the client's details to generate a unique, secure link.</p>
     <label>First name <input type="text" id="firstName"></label>
     <label>Last name <input type="text" id="lastName"></label>
     <label>ID (optional)
       <input type="text" id="clientId" placeholder="e.g. policy or client number">
+      <span class="field-hint">Added to the email subject and used as the
+        password to open the emailed PDF.</span>
     </label>
-    <p class="help">The ID is added to the email subject and, for questionnaires,
-      is used as the password to open the emailed PDF.</p>
     <label>Link expires in (days)
       <input type="number" id="expiryDays" min="1" max="365"
              value="{{ settings.LINK_EXPIRY_DAYS }}">
     </label>
     <input type="hidden" id="shareKind">
     <input type="hidden" id="shareTemplateId">
-    <div style="margin-top:12px">
+    <div class="btn-row" style="margin-top:20px">
       <button class="btn" onclick="generateLink()">Generate link</button>
       <button class="btn secondary" onclick="closeShare()">Close</button>
     </div>
     <div id="linkResult" class="link-box" style="display:none"></div>
-    <div id="linkActions" style="display:none; margin-top:8px">
-      <button class="btn" type="button" onclick="copyLink()">Copy link</button>
-      <span id="copyStatus" class="help" style="margin-left:8px"></span>
+    <div id="linkActions" style="display:none; margin-top:10px">
+      <button class="btn btn--sm secondary" type="button" onclick="copyLink()">
+        Copy link</button>
+      <span id="copyStatus" class="help" style="margin-inline-start:8px"></span>
     </div>
   </div>
 </div>

@@ -1,43 +1,56 @@
 {% extends "base.html" %}
 {% block title %}{{ q.name }}{% endblock %}
+{% block appbar_actions %}{% endblock %}
 {% block content %}
 <div dir="{{ dir | default('ltr') }}">
-<h1>{{ q.name }}</h1>
-<p class="help" dir="auto">{{ greeting | default('Hello') }} {{ first }}</p>
-<p class="help">{{ tr.q_intro }}</p>
-{% if error %}<div class="flash">{{ error }}</div>{% endif %}
-<form method="post">
-  {% for question in q.questions %}
-  <div class="card">
-    <label>{{ loop.index }}. {{ question.prompt }}
-      {% if question.required %}<span style="color:#c53030">*</span>{% endif %}
-    </label>
-    {% set nm = "answer_" ~ loop.index0 %}
-    {% if question.type == "text" %}
-      <textarea name="{{ nm }}" rows="3" dir="auto"></textarea>
-    {% elif question.type == "number" %}
-      <input type="number" name="{{ nm }}">
-    {% elif question.type == "date" %}
-      <input type="date" name="{{ nm }}">
-    {% elif question.type == "yesno" %}
-      <select name="{{ nm }}">
-        <option value="">{{ tr.select_placeholder }}</option>
-        <option value="Yes">{{ tr.yes }}</option>
-        <option value="No">{{ tr.no }}</option>
-      </select>
-    {% elif question.type == "choice" %}
-      <select name="{{ nm }}">
-        <option value="">{{ tr.select_placeholder }}</option>
-        {% for opt in question.options %}
-        <option value="{{ opt }}">{{ opt }}</option>
-        {% endfor %}
-      </select>
-    {% else %}
-      <input type="text" name="{{ nm }}" dir="auto">
-    {% endif %}
+  <div class="guest-hero">
+    <span class="brand__mark">M</span>
+    <h1>{{ q.name }}</h1>
+    <p class="help">{{ greeting | default('Hello') }} {{ first }}</p>
   </div>
-  {% endfor %}
-  <button type="submit" class="btn">{{ tr.q_submit }}</button>
-</form>
+
+  <div class="card">
+    <p class="help" style="margin-top:0">{{ tr.q_intro }}</p>
+    {% if error %}<div class="alert alert--error">{{ error }}</div>{% endif %}
+    <form method="post">
+      {% for question in q.questions %}
+      <div style="padding:14px 0; border-bottom:1px solid var(--line)">
+        <label style="margin-top:0">{{ loop.index }}. {{ question.prompt }}
+          {% if question.required %}<span class="req">*</span>{% endif %}
+        </label>
+        {% set nm = "answer_" ~ loop.index0 %}
+        {% if question.type == "text" %}
+          <textarea name="{{ nm }}" rows="3" dir="auto"></textarea>
+        {% elif question.type == "number" %}
+          <input type="number" name="{{ nm }}">
+        {% elif question.type == "date" %}
+          <input type="date" name="{{ nm }}">
+        {% elif question.type == "yesno" %}
+          <select name="{{ nm }}">
+            <option value="">{{ tr.select_placeholder }}</option>
+            <option value="Yes">{{ tr.yes }}</option>
+            <option value="No">{{ tr.no }}</option>
+          </select>
+        {% elif question.type == "choice" %}
+          <select name="{{ nm }}">
+            <option value="">{{ tr.select_placeholder }}</option>
+            {% for opt in question.options %}
+            <option value="{{ opt }}">{{ opt }}</option>
+            {% endfor %}
+          </select>
+        {% else %}
+          <input type="text" name="{{ nm }}" dir="auto">
+        {% endif %}
+      </div>
+      {% endfor %}
+      <button type="submit" class="btn btn--lg" style="margin-top:22px">
+        {{ tr.q_submit }}</button>
+    </form>
+  </div>
+
+  <div class="trust-row">
+    <span><span class="tick">&#10003;</span> {{ tr.sent_securely }}</span>
+    <span><span class="tick">&#10003;</span> {{ tr.not_stored }}</span>
+  </div>
 </div>
 {% endblock %}

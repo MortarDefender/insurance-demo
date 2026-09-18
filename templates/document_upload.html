@@ -1,13 +1,23 @@
 {% extends "base.html" %}
 {% block title %}Upload document{% endblock %}
+{% block appbar_actions %}
+  <a href="{{ url_for('admin') }}">Back to templates</a>
+{% endblock %}
 {% block content %}
-<h1>Upload document template</h1>
+<div class="page-head">
+  <p class="eyebrow">Documents</p>
+  <h1>Upload document template</h1>
+  <p class="help">Clients will download this file, sign it, and upload their
+    signed copy back to you.</p>
+</div>
 <form method="post" enctype="multipart/form-data">
-  <label>Display name
-    <input type="text" name="display_name" required></label>
-  <label>File (pdf, doc, docx)
-    <input type="file" name="file" accept=".pdf,.doc,.docx" required></label>
-  <div style="margin-top:16px">
+  <div class="card stack">
+    <label>Display name
+      <input type="text" name="display_name" required></label>
+    <label>File (pdf, doc, docx)
+      <input type="file" name="file" accept=".pdf,.doc,.docx" required></label>
+  </div>
+  <div class="btn-row">
     <button type="submit" class="btn">Upload</button>
     <a class="btn secondary" href="{{ url_for('admin') }}">Cancel</a>
   </div>

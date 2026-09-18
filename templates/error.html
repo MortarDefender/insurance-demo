@@ -1,7 +1,11 @@
 {% extends "base.html" %}
 {% block title %}{{ tr.error_title if tr else 'Link problem' }}{% endblock %}
+{% block appbar_actions %}{% endblock %}
 {% block content %}
-<div class="card" dir="{{ dir | default('ltr') }}">
+<div class="card card--pad-lg card--center" dir="{{ dir | default('ltr') }}"
+     style="margin-top:32px">
+  <div class="success-check" style="background:var(--danger-soft);
+       color:var(--danger);border-color:#f0c4c0">!</div>
   <h1>{{ tr.error_heading if tr else 'Sorry' }}</h1>
   <p class="help">{{ message }}</p>
 </div>

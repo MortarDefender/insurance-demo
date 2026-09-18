@@ -4,17 +4,40 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
   <title>{% block title %}Client Portal{% endblock %}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-  <div class="container">
+  {% block appbar %}
+  <header class="appbar">
+    <div class="appbar__inner">
+      <a class="brand" href="{{ brand_href | default('#') }}">
+        <span class="brand__mark">M</span>
+        <span>
+          <span class="brand__name">Meridian</span>
+          <span class="brand__sub">Insurance Services</span>
+        </span>
+      </a>
+      <nav class="appbar__actions">{% block appbar_actions %}{% endblock %}</nav>
+    </div>
+  </header>
+  {% endblock %}
+
+  <main class="container {% block container_class %}{% endblock %}">
     {% with messages = get_flashed_messages() %}
       {% if messages %}
         <div class="flash">{% for m in messages %}<p>{{ m }}</p>{% endfor %}</div>
       {% endif %}
     {% endwith %}
     {% block content %}{% endblock %}
-  </div>
+  </main>
+
+  {% block footer %}
+  <footer class="site-footer">
+    <span class="dot"></span>
+    <span>Your information is sent securely and is not stored on this site.</span>
+  </footer>
+  {% endblock %}
 </body>
 </html>
