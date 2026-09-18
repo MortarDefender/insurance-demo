@@ -222,9 +222,15 @@ def register_guest_routes(app):
                     body_lines.append(f"Q: {prompt}")
                     body_lines.append(f"A: {val or '(no answer)'}")
                     body_lines.append("")
-                mailer.send(settings,
-                            subject=f"{q['name']} - {first} {last}",
-                            body="\n".join(body_lines), attachments=[])
+                try:
+                    mailer.send(settings,
+                                subject=f"{q['name']} - {first} {last}",
+                                body="\n".join(body_lines), attachments=[])
+                except Exception:
+                    return render_template(
+                        "guest_questionnaire.html", q=q, first=first,
+                        error="Sorry, we could not send your response just now. "
+                              "Please try again in a moment."), 503
                 return render_template("thank_you.html", first=first)
             return render_template("guest_questionnaire.html", q=q,
                                    first=first, error=None)
@@ -248,10 +254,16 @@ def register_guest_routes(app):
                     "guest_document.html", doc=doc, first=first, token=token,
                     error="That file type is not allowed.")
             file_bytes = file.read()
-            mailer.send(settings,
-                        subject=f"{doc['display_name']} - {first} {last}",
-                        body=f"Signed document from {first} {last} attached.",
-                        attachments=[(file.filename, file_bytes)])
+            try:
+                mailer.send(settings,
+                            subject=f"{doc['display_name']} - {first} {last}",
+                            body=f"Signed document from {first} {last} attached.",
+                            attachments=[(file.filename, file_bytes)])
+            except Exception:
+                return render_template(
+                    "guest_document.html", doc=doc, first=first, token=token,
+                    error="Sorry, we could not send your file just now. "
+                          "Please try again in a moment."), 503
             return render_template("thank_you.html", first=first)
         return render_template("guest_document.html", doc=doc, first=first,
                                token=token, error=None)
@@ -276,4 +288,4 @@ def register_guest_routes(app):
 
 
 if __name__ == "__main__":
-    create_app().run(debug=True, port=5000)
+    create_app().run(debug=True, port=9900)
