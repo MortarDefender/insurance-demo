@@ -1,0 +1,13 @@
+# Local secrets and settings
+config.py
+
+# Virtual environment
+.venv/
+
+# Simulated email output and transient uploads
+outbox/
+uploads_tmp/
+
+# Python
+__pycache__/
+*.pyc
