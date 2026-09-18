@@ -88,6 +88,10 @@ def test_hebrew_questionnaire_page_renders_rtl(app_and_client, settings):
     # email/PDF logic is language-independent.
     assert "כן" in html and "לא" in html
     assert 'value="Yes"' in html and 'value="No"' in html
+    # Guest UI chrome is localized (scope #2): intro + submit button.
+    assert "אנא ענו" in html  # Hebrew intro text
+    assert "שליחה" in html  # Hebrew Submit button
+    assert "Submit" not in html and "Please answer" not in html
 
 
 def test_english_questionnaire_page_stays_ltr(app_and_client, settings):
@@ -123,3 +127,75 @@ def test_hebrew_submission_emails_valid_hebrew_pdf(app_and_client, settings):
     pdfs = [p for p in msg.walk() if p.get_content_type() == "application/pdf"]
     assert len(pdfs) == 1
     assert _pdf_ok(pdfs[0].get_payload(decode=True))
+    # The client saw Hebrew but the emailed answer value is language-independent.
+    body = [p for p in msg.walk()
+            if p.get_content_type() == "text/plain"][0]
+    assert "A: 40" in body.get_payload(decode=True).decode("utf-8")
+
+
+def test_hebrew_thank_you_is_localized(app_and_client, settings):
+    app, c = app_and_client
+    qid = app.config["STORE"].create_questionnaire(
+        name="שאלון בריאות",
+        questions=[{"prompt": "מה גילך?", "type": "number", "required": False}])
+    token = make_link_token(settings.SECRET_KEY, kind="questionnaire",
+                            template_id=qid, first_name="ישראל",
+                            last_name="ישראלי", expiry_days=7)
+    html = c.post(f"/c/{token}", data={"answer_0": "40"}).get_data(as_text=True)
+    assert 'lang="he"' in html
+    assert "תודה, ישראל!" in html  # localized + name interpolated
+    assert "קיבלנו את תשובתכם" in html
+    assert "Thank you" not in html
+
+
+def test_english_thank_you_unchanged(app_and_client, settings):
+    app, c = app_and_client
+    qid = app.config["STORE"].create_questionnaire(
+        name="Health Review",
+        questions=[{"prompt": "Age", "type": "number", "required": False}])
+    token = make_link_token(settings.SECRET_KEY, kind="questionnaire",
+                            template_id=qid, first_name="Jane",
+                            last_name="Doe", expiry_days=7)
+    html = c.post(f"/c/{token}", data={"answer_0": "40"}).get_data(as_text=True)
+    assert "Thank you, Jane!" in html
+    assert 'lang="en"' in html
+
+
+def test_hebrew_document_page_is_localized(app_and_client, settings):
+    app, c = app_and_client
+    did = app.config["STORE"].create_document(
+        display_name="טופס הסכמה", original_filename="f.pdf",
+        file_bytes=b"%PDF-1.4 x")
+    token = make_link_token(settings.SECRET_KEY, kind="document",
+                            template_id=did, first_name="ישראל",
+                            last_name="ישראלי", expiry_days=7)
+    html = c.get(f"/c/{token}").get_data(as_text=True)
+    assert '<html lang="he" dir="rtl">' in html
+    assert "הורדה" in html  # download button
+    assert "שליחת המסמך החתום" in html  # submit button
+    assert "אנא בצעו" in html  # steps intro
+    assert "Download" not in html and "Send signed document" not in html
+
+
+def test_invalid_link_error_page_renders_english_default(app_and_client):
+    app, c = app_and_client
+    html = c.get("/c/not-a-real-token").get_data(as_text=True)
+    assert "This link is invalid" in html
+    # Falls back to English/LTR when we cannot know the intended language.
+    assert 'lang="en"' in html
+
+
+def test_i18n_helper_maps_direction_and_falls_back():
+    from i18n import strings, t, lang_for
+    assert lang_for("rtl") == "he"
+    assert lang_for("ltr") == "en"
+    # direction values are accepted directly
+    assert strings("rtl")["q_submit"] == "שליחה"
+    assert strings("ltr")["q_submit"] == "Submit"
+    # unknown language falls back to English
+    assert strings("fr")["q_submit"] == "Submit"
+    # format interpolation
+    assert t("he", "thank_you_heading", name="דנה") == "תודה, דנה!"
+    assert t("en", "thank_you_heading", name="Dana") == "Thank you, Dana!"
+    # unknown key returns the key itself rather than raising
+    assert t("en", "no_such_key") == "no_such_key"

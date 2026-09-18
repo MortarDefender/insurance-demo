@@ -4,24 +4,23 @@
 <div dir="{{ dir | default('ltr') }}">
 <h1 dir="auto">{{ doc.display_name }}</h1>
 <p class="help" dir="auto">{{ greeting | default('Hello') }} {{ first }}</p>
-<p class="help">Please follow these steps:</p>
+<p class="help">{{ tr.d_intro }}</p>
 <ol class="steps">
-  <li>Download the document below.</li>
-  <li>Sign it yourself (print &amp; sign, or sign digitally).</li>
-  <li>Upload your signed copy here. It is emailed to us and not stored on this
-    site.</li>
+  <li>{{ tr.d_step_download }}</li>
+  <li>{{ tr.d_step_sign }}</li>
+  <li>{{ tr.d_step_upload }}</li>
 </ol>
 
 <div class="card">
   <a class="btn" href="{{ url_for('guest_download', token=token) }}">
-    Download: {{ doc.display_name }}</a>
+    {{ tr.d_download }}: {{ doc.display_name }}</a>
 </div>
 
 {% if error %}<div class="flash">{{ error }}</div>{% endif %}
 <form method="post" enctype="multipart/form-data" class="card">
-  <label>Upload your signed file (pdf, doc, docx)
+  <label>{{ tr.d_upload_label }}
     <input type="file" name="file" accept=".pdf,.doc,.docx" required></label>
-  <button type="submit" class="btn">Send signed document</button>
+  <button type="submit" class="btn">{{ tr.d_submit }}</button>
 </form>
 </div>
 {% endblock %}

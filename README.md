@@ -62,12 +62,16 @@ configuration. Direction is detected from the content itself:
 
 - Client pages flip to a right-to-left layout when the questionnaire or document
   name is in Hebrew (English content stays left-to-right).
+- Client-facing UI text (intro, buttons, step instructions, Yes/No options,
+  thank-you and error pages) is shown in Hebrew for Hebrew content and English
+  otherwise. Strings live in `i18n.py`; the admin area stays English.
 - The emailed PDF embeds a bundled Hebrew font (`fonts/NotoSansHebrew-Regular.ttf`,
   SIL Open Font License) and reorders RTL text correctly. Mixed English/Hebrew
   content is handled per line.
 
 Client answers, names, and question text are UTF-8 throughout, so Hebrew flows
-through the email and PDF unchanged.
+through the email and PDF unchanged. Stored/emailed answer *values* stay
+language-independent (a Yes/No question shows כן/לא but still records `Yes`/`No`).
 
 ## Tests
 

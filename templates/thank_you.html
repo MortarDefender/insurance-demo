@@ -1,8 +1,8 @@
 {% extends "base.html" %}
-{% block title %}Thank you{% endblock %}
+{% block title %}{{ tr.thank_you_title if tr else 'Thank you' }}{% endblock %}
 {% block content %}
-<div class="card">
-  <h1>Thank you, {{ first }}!</h1>
-  <p class="help">We have received your response. You can close this page.</p>
+<div class="card" dir="{{ dir | default('ltr') }}">
+  <h1 dir="auto">{{ (tr.thank_you_heading if tr else 'Thank you, {name}!').format(name=first) }}</h1>
+  <p class="help">{{ tr.thank_you_body if tr else 'We have received your response. You can close this page.' }}</p>
 </div>
 {% endblock %}

@@ -194,6 +194,7 @@ def register_guest_routes(app):
     from links import read_link_token, LinkError
     import mailer
     from textdir import direction
+    from i18n import strings as i18n_strings
 
     settings = app.config["SETTINGS"]
     store = app.config["STORE"]
@@ -210,21 +211,23 @@ def register_guest_routes(app):
     def guest(token):
         data, err = _load(token)
         if data is None:
-            return render_template("error.html", message=(
-                "This link is invalid or has expired. "
-                "Please ask for a new link.")), 400
+            tr = i18n_strings("en")
+            return render_template("error.html", message=tr["link_invalid"],
+                                   dir="ltr", tr=tr), 400
 
         first, last = data["first_name"], data["last_name"]
         if data["kind"] == "questionnaire":
             q = store.get_questionnaire(data["template_id"])
-            if q is None:
-                return render_template(
-                    "error.html",
-                    message="This form is no longer available."), 404
             # Direction follows the questionnaire content (name + prompts).
             q_dir = direction(q["name"], *[qq.get("prompt", "")
-                                           for qq in q["questions"]])
-            greeting = "שלום" if q_dir == "rtl" else "Hello"
+                                           for qq in q["questions"]]) \
+                if q else "ltr"
+            tr = i18n_strings(q_dir)
+            if q is None:
+                return render_template(
+                    "error.html", message=tr["form_unavailable"],
+                    dir=q_dir, tr=tr), 404
+            greeting = tr["greeting"]
             if request.method == "POST":
                 answers, missing = [], False
                 for i, question in enumerate(q["questions"]):
@@ -235,8 +238,8 @@ def register_guest_routes(app):
                 if missing:
                     return render_template(
                         "guest_questionnaire.html", q=q, first=first,
-                        dir=q_dir, greeting=greeting,
-                        error="Please fill in all required fields.")
+                        dir=q_dir, greeting=greeting, tr=tr,
+                        error=tr["q_required"])
                 body_lines = [f"Client: {first} {last}", ""]
                 for prompt, val in answers:
                     body_lines.append(f"Q: {prompt}")
@@ -257,36 +260,37 @@ def register_guest_routes(app):
                 except Exception:
                     return render_template(
                         "guest_questionnaire.html", q=q, first=first,
-                        dir=q_dir, greeting=greeting,
-                        error="Sorry, we could not send your response just now. "
-                              "Please try again in a moment."), 503
-                return render_template("thank_you.html", first=first)
+                        dir=q_dir, greeting=greeting, tr=tr,
+                        error=tr["send_failed"]), 503
+                return render_template("thank_you.html", first=first,
+                                       dir=q_dir, tr=tr)
             return render_template("guest_questionnaire.html", q=q,
                                    first=first, dir=q_dir, greeting=greeting,
-                                   error=None)
+                                   tr=tr, error=None)
 
         # document flow
         doc = store.get_document(data["template_id"])
+        d_dir = direction(doc["display_name"]) if doc else "ltr"
+        tr = i18n_strings(d_dir)
         if doc is None:
             return render_template(
-                "error.html",
-                message="This document is no longer available."), 404
-        d_dir = direction(doc["display_name"])
-        greeting = "שלום" if d_dir == "rtl" else "Hello"
+                "error.html", message=tr["doc_unavailable"],
+                dir=d_dir, tr=tr), 404
+        greeting = tr["greeting"]
         if request.method == "POST":
             file = request.files.get("file")
             if not file or file.filename == "":
                 return render_template(
                     "guest_document.html", doc=doc, first=first, token=token,
-                    dir=d_dir, greeting=greeting,
-                    error="Please choose your signed file.")
+                    dir=d_dir, greeting=greeting, tr=tr,
+                    error=tr["d_choose_file"])
             ext = file.filename.rsplit(".", 1)[-1].lower() \
                 if "." in file.filename else ""
             if ext not in settings.ALLOWED_UPLOAD_EXTENSIONS:
                 return render_template(
                     "guest_document.html", doc=doc, first=first, token=token,
-                    dir=d_dir, greeting=greeting,
-                    error="That file type is not allowed.")
+                    dir=d_dir, greeting=greeting, tr=tr,
+                    error=tr["d_bad_type"])
             file_bytes = file.read()
             try:
                 mailer.send(settings,
@@ -296,13 +300,13 @@ def register_guest_routes(app):
             except Exception:
                 return render_template(
                     "guest_document.html", doc=doc, first=first, token=token,
-                    dir=d_dir, greeting=greeting,
-                    error="Sorry, we could not send your file just now. "
-                          "Please try again in a moment."), 503
-            return render_template("thank_you.html", first=first)
+                    dir=d_dir, greeting=greeting, tr=tr,
+                    error=tr["send_failed"]), 503
+            return render_template("thank_you.html", first=first,
+                                   dir=d_dir, tr=tr)
         return render_template("guest_document.html", doc=doc, first=first,
                                token=token, dir=d_dir, greeting=greeting,
-                               error=None)
+                               tr=tr, error=None)
 
     @app.route("/c/<token>/download")
     def guest_download(token):

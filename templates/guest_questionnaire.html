@@ -4,8 +4,7 @@
 <div dir="{{ dir | default('ltr') }}">
 <h1>{{ q.name }}</h1>
 <p class="help" dir="auto">{{ greeting | default('Hello') }} {{ first }}</p>
-<p class="help">Please answer the questions below and press submit. Your answers
-  are sent directly to us and are not stored on this site.</p>
+<p class="help">{{ tr.q_intro }}</p>
 {% if error %}<div class="flash">{{ error }}</div>{% endif %}
 <form method="post">
   {% for question in q.questions %}
@@ -21,16 +20,14 @@
     {% elif question.type == "date" %}
       <input type="date" name="{{ nm }}">
     {% elif question.type == "yesno" %}
-      {% set rtl = (dir | default('ltr')) == 'rtl' %}
       <select name="{{ nm }}">
-        <option value="">{{ '-- בחר --' if rtl else '-- select --' }}</option>
-        <option value="Yes">{{ 'כן' if rtl else 'Yes' }}</option>
-        <option value="No">{{ 'לא' if rtl else 'No' }}</option>
+        <option value="">{{ tr.select_placeholder }}</option>
+        <option value="Yes">{{ tr.yes }}</option>
+        <option value="No">{{ tr.no }}</option>
       </select>
     {% elif question.type == "choice" %}
-      {% set rtl = (dir | default('ltr')) == 'rtl' %}
       <select name="{{ nm }}">
-        <option value="">{{ '-- בחר --' if rtl else '-- select --' }}</option>
+        <option value="">{{ tr.select_placeholder }}</option>
         {% for opt in question.options %}
         <option value="{{ opt }}">{{ opt }}</option>
         {% endfor %}
@@ -40,7 +37,7 @@
     {% endif %}
   </div>
   {% endfor %}
-  <button type="submit" class="btn">Submit</button>
+  <button type="submit" class="btn">{{ tr.q_submit }}</button>
 </form>
 </div>
 {% endblock %}
