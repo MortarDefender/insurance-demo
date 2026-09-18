@@ -7,19 +7,82 @@ from auth import check_password, login_required
 
 
 def _settings_from_config():
-    import config
-
     class S:
         pass
     s = S()
-    for key in dir(config):
-        if key.isupper():
-            setattr(s, key, getattr(config, key))
+
+    # Base defaults from config.py when present. On a fresh cloud host there may
+    # be no config.py at all; that's fine, every value can come from the
+    # environment instead.
+    try:
+        import config
+        for key in dir(config):
+            if key.isupper():
+                setattr(s, key, getattr(config, key))
+    except ModuleNotFoundError:
+        pass
+
+    _apply_env_overrides(s)
+
     base = os.path.dirname(os.path.abspath(__file__))
-    s.STORE_DIR = os.path.join(base, "templates_store")
-    s.OUTBOX_DIR = os.path.join(base, "outbox")
-    s.UPLOADS_TMP_DIR = os.path.join(base, "uploads_tmp")
+    # Storage dirs are configurable so a host with a persistent disk can point
+    # them at the mounted volume via env vars.
+    s.STORE_DIR = os.environ.get("STORE_DIR",
+                                 os.path.join(base, "templates_store"))
+    s.OUTBOX_DIR = os.environ.get("OUTBOX_DIR", os.path.join(base, "outbox"))
+    s.UPLOADS_TMP_DIR = os.environ.get("UPLOADS_TMP_DIR",
+                                       os.path.join(base, "uploads_tmp"))
     return s
+
+
+def _env_bool(name, default):
+    val = os.environ.get(name)
+    if val is None:
+        return default
+    return val.strip().lower() in ("1", "true", "yes", "on")
+
+
+def _apply_env_overrides(s):
+    """Overlay environment variables onto the settings object. Env wins over
+    config.py so the same code runs locally (config.py) and on a host (env)."""
+    str_keys = [
+        "SECRET_KEY", "ADMIN_PASSWORD", "ADMIN_PASSWORD_HASH", "ADMIN_EMAIL",
+        "MAIL_MODE", "SMTP_HOST", "SMTP_USERNAME", "SMTP_PASSWORD",
+        "COMPANY_NAME", "COMPANY_TAGLINE", "CONTACT_EMAIL", "CONTACT_PHONE",
+        "CONTACT_ADDRESS",
+    ]
+    for key in str_keys:
+        if key in os.environ:
+            setattr(s, key, os.environ[key])
+
+    int_keys = ["LINK_EXPIRY_DAYS", "PORT", "SMTP_PORT", "MAX_UPLOAD_MB"]
+    for key in int_keys:
+        if key in os.environ:
+            try:
+                setattr(s, key, int(os.environ[key]))
+            except ValueError:
+                pass
+
+    if "SMTP_USE_TLS" in os.environ:
+        s.SMTP_USE_TLS = _env_bool("SMTP_USE_TLS", True)
+
+    if "ALLOWED_UPLOAD_EXTENSIONS" in os.environ:
+        s.ALLOWED_UPLOAD_EXTENSIONS = [
+            e.strip().lower()
+            for e in os.environ["ALLOWED_UPLOAD_EXTENSIONS"].split(",")
+            if e.strip()]
+
+    # Deployment behaviour flags.
+    s.DEBUG = _env_bool("FLASK_DEBUG", False)
+    # Secure cookies over HTTPS. Render terminates TLS at its proxy, so default
+    # this on in production and off for local plain-HTTP dev.
+    s.SESSION_COOKIE_SECURE = _env_bool(
+        "SESSION_COOKIE_SECURE", not s.DEBUG and _on_https_host())
+
+
+def _on_https_host():
+    """Heuristic: Render and most PaaS set RENDER or provide a public URL."""
+    return bool(os.environ.get("RENDER") or os.environ.get("PUBLIC_HTTPS"))
 
 
 def create_app(settings=None):
@@ -31,6 +94,20 @@ def create_app(settings=None):
     app.config["MAX_CONTENT_LENGTH"] = settings.MAX_UPLOAD_MB * 1024 * 1024
     app.config["SETTINGS"] = settings
     app.config["STORE"] = Store(settings.STORE_DIR)
+
+    # Hardened session cookies. Secure is toggled by environment so local dev
+    # over plain HTTP still works while production (HTTPS) gets Secure cookies.
+    app.config.update(
+        SESSION_COOKIE_HTTPONLY=True,
+        SESSION_COOKIE_SAMESITE="Lax",
+        SESSION_COOKIE_SECURE=getattr(settings, "SESSION_COOKIE_SECURE", False),
+    )
+
+    # Trust the platform's proxy headers (X-Forwarded-Proto/Host) so url_for
+    # builds correct https:// external links behind Render's load balancer.
+    if _on_https_host():
+        from werkzeug.middleware.proxy_fix import ProxyFix
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 
     @app.route("/login", methods=["GET", "POST"])
     def login():
@@ -354,6 +431,11 @@ def register_guest_routes(app):
 
 
 if __name__ == "__main__":
+    # Local development entry point only. In production the app is served by
+    # gunicorn via wsgi.py (debug always off). Running `python app.py` locally
+    # defaults to debug/auto-reload unless FLASK_DEBUG=0 is set.
     app = create_app()
-    port = getattr(app.config["SETTINGS"], "PORT", 9900)
-    app.run(debug=True, port=port)
+    settings = app.config["SETTINGS"]
+    port = getattr(settings, "PORT", 9900)
+    local_debug = _env_bool("FLASK_DEBUG", True)
+    app.run(debug=local_debug, port=port)

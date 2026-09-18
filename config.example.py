@@ -1,7 +1,16 @@
 # Copy to config.py and fill in real values. config.py is git-ignored.
+#
+# For LOCAL development you can set values here. For a PRODUCTION deploy
+# (e.g. Render) prefer environment variables; they override anything here.
+# See DEPLOY.md.
 
-# Admin login password (plaintext for local; hash before real deployment).
+# Admin login password.
+#   Local dev: set ADMIN_PASSWORD (plaintext) below.
+#   Production: instead set the ADMIN_PASSWORD_HASH env var to the output of
+#   `python gen_password_hash.py`, and leave the plaintext unset. If both are
+#   present, the hash wins.
 ADMIN_PASSWORD = "change-me"
+# ADMIN_PASSWORD_HASH = "pbkdf2:sha256:...."  # optional; overrides the above
 
 # Secret used to sign links and sessions. Use a long random string.
 SECRET_KEY = "change-me-to-a-long-random-string"
