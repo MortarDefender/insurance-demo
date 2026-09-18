@@ -1,7 +1,9 @@
 {% extends "base.html" %}
 {% block title %}{{ q.name }}{% endblock %}
 {% block content %}
-<h1>Hello {{ first }}</h1>
+<div dir="{{ dir | default('ltr') }}">
+<h1>{{ q.name }}</h1>
+<p class="help" dir="auto">{{ greeting | default('Hello') }} {{ first }}</p>
 <p class="help">Please answer the questions below and press submit. Your answers
   are sent directly to us and are not stored on this site.</p>
 {% if error %}<div class="flash">{{ error }}</div>{% endif %}
@@ -13,7 +15,7 @@
     </label>
     {% set nm = "answer_" ~ loop.index0 %}
     {% if question.type == "text" %}
-      <textarea name="{{ nm }}" rows="3"></textarea>
+      <textarea name="{{ nm }}" rows="3" dir="auto"></textarea>
     {% elif question.type == "number" %}
       <input type="number" name="{{ nm }}">
     {% elif question.type == "date" %}
@@ -32,10 +34,11 @@
         {% endfor %}
       </select>
     {% else %}
-      <input type="text" name="{{ nm }}">
+      <input type="text" name="{{ nm }}" dir="auto">
     {% endif %}
   </div>
   {% endfor %}
   <button type="submit" class="btn">Submit</button>
 </form>
+</div>
 {% endblock %}

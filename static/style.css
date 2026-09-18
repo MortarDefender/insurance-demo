@@ -29,3 +29,9 @@ th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid #e2e8f0;
 .help { color: #4a5568; font-size: .95rem; }
 .steps { padding-left: 20px; }
 .steps li { margin: 8px 0; }
+
+/* RTL support (Hebrew, Arabic). Direction is set per-content via dir="rtl". */
+[dir="rtl"] { text-align: right; }
+[dir="rtl"] .steps { padding-left: 0; padding-right: 20px; }
+[dir="rtl"] th, [dir="rtl"] td { text-align: right; }
+[dir="rtl"] label { text-align: right; }

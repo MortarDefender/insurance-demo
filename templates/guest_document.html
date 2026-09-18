@@ -1,7 +1,9 @@
 {% extends "base.html" %}
 {% block title %}{{ doc.display_name }}{% endblock %}
 {% block content %}
-<h1>Hello {{ first }}</h1>
+<div dir="{{ dir | default('ltr') }}">
+<h1 dir="auto">{{ doc.display_name }}</h1>
+<p class="help" dir="auto">{{ greeting | default('Hello') }} {{ first }}</p>
 <p class="help">Please follow these steps:</p>
 <ol class="steps">
   <li>Download the document below.</li>
@@ -21,4 +23,5 @@
     <input type="file" name="file" accept=".pdf,.doc,.docx" required></label>
   <button type="submit" class="btn">Send signed document</button>
 </form>
+</div>
 {% endblock %}

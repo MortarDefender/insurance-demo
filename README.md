@@ -55,6 +55,20 @@ In `outbox` mode, "sent" emails are written as `.eml` files in `outbox/`. Open
 them in any mail client to verify. To send real email later, set
 `MAIL_MODE = "smtp"` and fill in the `SMTP_*` values. No code changes needed.
 
+## Languages (Hebrew / RTL)
+
+The site handles Hebrew and other right-to-left languages automatically, with no
+configuration. Direction is detected from the content itself:
+
+- Client pages flip to a right-to-left layout when the questionnaire or document
+  name is in Hebrew (English content stays left-to-right).
+- The emailed PDF embeds a bundled Hebrew font (`fonts/NotoSansHebrew-Regular.ttf`,
+  SIL Open Font License) and reorders RTL text correctly. Mixed English/Hebrew
+  content is handled per line.
+
+Client answers, names, and question text are UTF-8 throughout, so Hebrew flows
+through the email and PDF unchanged.
+
 ## Tests
 
 ```bash

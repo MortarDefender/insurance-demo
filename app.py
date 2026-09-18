@@ -193,6 +193,7 @@ def register_guest_routes(app):
     from flask import abort, Response
     from links import read_link_token, LinkError
     import mailer
+    from textdir import direction
 
     settings = app.config["SETTINGS"]
     store = app.config["STORE"]
@@ -220,6 +221,10 @@ def register_guest_routes(app):
                 return render_template(
                     "error.html",
                     message="This form is no longer available."), 404
+            # Direction follows the questionnaire content (name + prompts).
+            q_dir = direction(q["name"], *[qq.get("prompt", "")
+                                           for qq in q["questions"]])
+            greeting = "שלום" if q_dir == "rtl" else "Hello"
             if request.method == "POST":
                 answers, missing = [], False
                 for i, question in enumerate(q["questions"]):
@@ -230,6 +235,7 @@ def register_guest_routes(app):
                 if missing:
                     return render_template(
                         "guest_questionnaire.html", q=q, first=first,
+                        dir=q_dir, greeting=greeting,
                         error="Please fill in all required fields.")
                 body_lines = [f"Client: {first} {last}", ""]
                 for prompt, val in answers:
@@ -251,11 +257,13 @@ def register_guest_routes(app):
                 except Exception:
                     return render_template(
                         "guest_questionnaire.html", q=q, first=first,
+                        dir=q_dir, greeting=greeting,
                         error="Sorry, we could not send your response just now. "
                               "Please try again in a moment."), 503
                 return render_template("thank_you.html", first=first)
             return render_template("guest_questionnaire.html", q=q,
-                                   first=first, error=None)
+                                   first=first, dir=q_dir, greeting=greeting,
+                                   error=None)
 
         # document flow
         doc = store.get_document(data["template_id"])
@@ -263,17 +271,21 @@ def register_guest_routes(app):
             return render_template(
                 "error.html",
                 message="This document is no longer available."), 404
+        d_dir = direction(doc["display_name"])
+        greeting = "שלום" if d_dir == "rtl" else "Hello"
         if request.method == "POST":
             file = request.files.get("file")
             if not file or file.filename == "":
                 return render_template(
                     "guest_document.html", doc=doc, first=first, token=token,
+                    dir=d_dir, greeting=greeting,
                     error="Please choose your signed file.")
             ext = file.filename.rsplit(".", 1)[-1].lower() \
                 if "." in file.filename else ""
             if ext not in settings.ALLOWED_UPLOAD_EXTENSIONS:
                 return render_template(
                     "guest_document.html", doc=doc, first=first, token=token,
+                    dir=d_dir, greeting=greeting,
                     error="That file type is not allowed.")
             file_bytes = file.read()
             try:
@@ -284,11 +296,13 @@ def register_guest_routes(app):
             except Exception:
                 return render_template(
                     "guest_document.html", doc=doc, first=first, token=token,
+                    dir=d_dir, greeting=greeting,
                     error="Sorry, we could not send your file just now. "
                           "Please try again in a moment."), 503
             return render_template("thank_you.html", first=first)
         return render_template("guest_document.html", doc=doc, first=first,
-                               token=token, error=None)
+                               token=token, dir=d_dir, greeting=greeting,
+                               error=None)
 
     @app.route("/c/<token>/download")
     def guest_download(token):
