@@ -88,17 +88,34 @@ def _col_widths(is_rtl_doc):
     return [100 * mm, 60 * mm] if is_rtl_doc else [60 * mm, 100 * mm]
 
 
-def build_questionnaire_pdf(*, title, first_name, last_name, answers):
-    """answers: list of (prompt, answer_string). Returns PDF bytes."""
+def build_questionnaire_pdf(*, title, first_name, last_name, answers,
+                            password=""):
+    """answers: list of (prompt, answer_string). Returns PDF bytes.
+
+    If ``password`` is a non-empty string, the PDF is encrypted with it as the
+    open (user) password using reportlab's 128-bit standard encryption. This is
+    standard PDF password protection: readers such as Preview, Acrobat, and most
+    mail clients will prompt for the password. Note that PDF standard encryption
+    is only moderately strong; it protects casual access, not a determined
+    attacker with the file.
+    """
     font_ok = _ensure_font()
     buf = BytesIO()
+
+    encrypt = None
+    password = (password or "").strip()
+    if password:
+        from reportlab.lib import pdfencrypt
+        encrypt = pdfencrypt.StandardEncryption(
+            userPassword=password, ownerPassword=password,
+            canPrint=1, canModify=0, canCopy=1, canAnnotate=0, strength=128)
 
     title_rtl = _is_rtl(title)
     doc = SimpleDocTemplate(
         buf, pagesize=A4,
         leftMargin=20 * mm, rightMargin=20 * mm,
         topMargin=20 * mm, bottomMargin=20 * mm,
-        title=title, author="Client Portal")
+        title=title, author="Client Portal", encrypt=encrypt)
 
     styles = getSampleStyleSheet()
     styles.add(ParagraphStyle(

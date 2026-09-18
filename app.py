@@ -164,6 +164,7 @@ def register_admin_routes(app):
         template_id = request.form.get("template_id", "")
         first = request.form.get("first_name", "").strip()
         last = request.form.get("last_name", "").strip()
+        client_id = request.form.get("client_id", "").strip()
         if kind not in ("questionnaire", "document") or not template_id:
             return jsonify({"error": "bad request"}), 400
         if not first or not last:
@@ -183,7 +184,7 @@ def register_admin_routes(app):
                 return jsonify({"error": "expiry days must be between 1 and 365"}), 400
         token = make_link_token(settings.SECRET_KEY, kind=kind,
                                 template_id=template_id, first_name=first,
-                                last_name=last,
+                                last_name=last, client_id=client_id,
                                 expiry_days=expiry_days)
         link = url_for("guest", token=token, _external=True)
         return jsonify({"link": link})
@@ -216,6 +217,9 @@ def register_guest_routes(app):
                                    dir="ltr", tr=tr), 400
 
         first, last = data["first_name"], data["last_name"]
+        client_id = (data.get("client_id") or "").strip()
+        # Optional ID prefix for the email subject, e.g. "[A-1234] ...".
+        subject_prefix = f"[{client_id}] " if client_id else ""
         if data["kind"] == "questionnaire":
             q = store.get_questionnaire(data["template_id"])
             # Direction follows the questionnaire content (name + prompts).
@@ -248,13 +252,14 @@ def register_guest_routes(app):
                 import pdf_report
                 pdf_bytes = pdf_report.build_questionnaire_pdf(
                     title=q["name"], first_name=first, last_name=last,
-                    answers=answers)
+                    answers=answers, password=client_id)
                 safe_name = "".join(ch for ch in f"{q['name']} - {first} {last}"
                                     if ch.isalnum() or ch in " -_").strip()
                 pdf_filename = f"{safe_name or 'questionnaire'}.pdf"
                 try:
                     mailer.send(settings,
-                                subject=f"{q['name']} - {first} {last}",
+                                subject=f"{subject_prefix}{q['name']} - "
+                                        f"{first} {last}",
                                 body="\n".join(body_lines),
                                 attachments=[(pdf_filename, pdf_bytes)])
                 except Exception:
@@ -294,7 +299,8 @@ def register_guest_routes(app):
             file_bytes = file.read()
             try:
                 mailer.send(settings,
-                            subject=f"{doc['display_name']} - {first} {last}",
+                            subject=f"{subject_prefix}{doc['display_name']} - "
+                                    f"{first} {last}",
                             body=f"Signed document from {first} {last} attached.",
                             attachments=[(file.filename, file_bytes)])
             except Exception:

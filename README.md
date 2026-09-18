@@ -55,6 +55,23 @@ In `outbox` mode, "sent" emails are written as `.eml` files in `outbox/`. Open
 them in any mail client to verify. To send real email later, set
 `MAIL_MODE = "smtp"` and fill in the `SMTP_*` values. No code changes needed.
 
+## Client ID (email subject + PDF password)
+
+The Share dialog has an optional **ID** field (e.g. a policy or client number).
+When set, it is carried inside the signed link token (never stored on the site)
+and used for two things:
+
+- It is prefixed to the email subject: `[ID] Template - First Last`.
+- For questionnaires, it becomes the password that opens the emailed PDF
+  (128-bit PDF standard encryption). The admin opens the PDF with the same ID.
+
+If the ID is left blank, the subject has no prefix and the PDF is not encrypted.
+
+Notes: the document-upload flow emails the client's own uploaded file, which is
+not re-encrypted, so encryption applies to the generated questionnaire PDF only.
+PDF standard encryption protects against casual access, not a determined
+attacker; treat the ID as a shared secret and share it out of band.
+
 ## Languages (Hebrew / RTL)
 
 The site handles Hebrew and other right-to-left languages automatically, with no

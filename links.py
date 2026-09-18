@@ -18,7 +18,7 @@ def _serializer(secret_key):
 
 
 def make_link_token(secret_key, *, kind, template_id, first_name, last_name,
-                    expiry_days):
+                    expiry_days, client_id=""):
     if kind not in ("questionnaire", "document"):
         raise ValueError("kind must be 'questionnaire' or 'document'")
     payload = {
@@ -26,6 +26,10 @@ def make_link_token(secret_key, *, kind, template_id, first_name, last_name,
         "template_id": template_id,
         "first_name": first_name,
         "last_name": last_name,
+        # Optional client/reference ID. Used in the email subject and as the
+        # password that encrypts the generated PDF. Stored only inside the
+        # signed token, never on disk.
+        "client_id": (client_id or "").strip(),
         # Per-client expiry, signed into the token so it cannot be tampered with.
         "expiry_days": int(expiry_days),
     }
