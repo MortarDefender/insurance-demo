@@ -109,6 +109,31 @@ def create_app(settings=None):
         from werkzeug.middleware.proxy_fix import ProxyFix
         app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 
+    from i18n import strings as i18n_strings
+
+    def _admin_lang():
+        """Admin UI language from the session ('en' default, or 'he')."""
+        return "he" if session.get("admin_lang") == "he" else "en"
+
+    @app.context_processor
+    def _inject_admin_i18n():
+        # Make the admin language, direction, and string table available to
+        # every template (guest pages override tr/dir with their own values).
+        lang = _admin_lang()
+        return {
+            "admin_lang": lang,
+            "admin_dir": "rtl" if lang == "he" else "ltr",
+            "atr": i18n_strings(lang),
+            "show_lang_toggle": bool(session.get("is_admin")),
+        }
+
+    @app.route("/admin/language/<lang>")
+    def set_language(lang):
+        # Toggle the admin UI language. Only en/he are supported.
+        session["admin_lang"] = "he" if lang == "he" else "en"
+        nxt = request.referrer or url_for("admin")
+        return redirect(nxt)
+
     @app.route("/login", methods=["GET", "POST"])
     def login():
         if request.method == "POST":
@@ -116,7 +141,7 @@ def create_app(settings=None):
                 session["is_admin"] = True
                 return redirect(url_for("admin"))
             flash("Incorrect password")
-        return render_template("login.html")
+        return render_template("login.html", show_lang_toggle=True)
 
     @app.route("/logout")
     def logout():
@@ -310,7 +335,9 @@ def register_admin_routes(app):
         token = make_link_token(settings.SECRET_KEY, kind=kind,
                                 template_id=template_id, first_name=first,
                                 last_name=last, client_id=client_id,
-                                expiry_days=expiry_days)
+                                expiry_days=expiry_days,
+                                lang=("he" if session.get("admin_lang") == "he"
+                                      else "en"))
         link = url_for("guest", token=token, _external=True)
         return jsonify({"link": link})
 
@@ -343,14 +370,20 @@ def register_guest_routes(app):
 
         first, last = data["first_name"], data["last_name"]
         client_id = (data.get("client_id") or "").strip()
+        # A link may force a language (set by the admin at share time). Otherwise
+        # fall back to detecting direction from the content.
+        forced_lang = data.get("lang")
         # Optional ID prefix for the email subject, e.g. "[A-1234] ...".
         subject_prefix = f"[{client_id}] " if client_id else ""
         if data["kind"] == "questionnaire":
             q = store.get_questionnaire(data["template_id"])
-            # Direction follows the questionnaire content (name + prompts).
-            q_dir = direction(q["name"], *[qq.get("prompt", "")
-                                           for qq in q["questions"]]) \
-                if q else "ltr"
+            if forced_lang in ("en", "he"):
+                q_dir = "rtl" if forced_lang == "he" else "ltr"
+            else:
+                # Direction follows the questionnaire content (name + prompts).
+                q_dir = direction(q["name"], *[qq.get("prompt", "")
+                                               for qq in q["questions"]]) \
+                    if q else "ltr"
             tr = i18n_strings(q_dir)
             if q is None:
                 return render_template(
@@ -456,7 +489,10 @@ def register_guest_routes(app):
 
         # document flow
         doc = store.get_document(data["template_id"])
-        d_dir = direction(doc["display_name"]) if doc else "ltr"
+        if forced_lang in ("en", "he"):
+            d_dir = "rtl" if forced_lang == "he" else "ltr"
+        else:
+            d_dir = direction(doc["display_name"]) if doc else "ltr"
         tr = i18n_strings(d_dir)
         if doc is None:
             return render_template(

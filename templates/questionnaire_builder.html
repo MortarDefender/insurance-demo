@@ -1,39 +1,39 @@
 {% extends "base.html" %}
-{% block title %}Questionnaire builder{% endblock %}
+{% block title %}{{ atr.a_builder }}{% endblock %}
 {% block appbar_actions %}
-  <a href="{{ url_for('admin') }}">Back to templates</a>
+  <a href="{{ url_for('admin') }}">{{ atr.a_back }}</a>
 {% endblock %}
 {% block content %}
 <div class="page-head">
-  <p class="eyebrow">Questionnaire builder</p>
-  <h1>{{ "Edit" if questionnaire else "New" }} questionnaire</h1>
-  <p class="help">Add questions of any type. Mark the ones clients must answer.</p>
+  <p class="eyebrow">{{ atr.a_builder }}</p>
+  <h1>{{ atr.a_edit_q_title if questionnaire else atr.a_new_q_title }}</h1>
+  <p class="help">{{ atr.a_builder_intro }}</p>
 </div>
 
 <form method="post" onsubmit="return prepareSubmit()">
   <div class="card">
-    <label>Questionnaire name
+    <label>{{ atr.a_q_name }}
       <input type="text" name="name"
              value="{{ questionnaire.name if questionnaire else '' }}" required>
     </label>
   </div>
 
-  <div class="section-title"><h2>Questions</h2></div>
+  <div class="section-title"><h2>{{ atr.a_questions }}</h2></div>
   <div id="questions">
     {% if questionnaire %}
       {% for q in questionnaire.questions %}
       <div class="q-row">
         <div class="q-grid">
-          <label>Prompt
+          <label>{{ atr.a_prompt }}
             <input type="text" name="q_prompt" value="{{ q.prompt }}"></label>
-          <label>Type
+          <label>{{ atr.a_type }}
             <select name="q_type" onchange="onTypeChange(this)">
-              {% for val, lbl in [("text","Short text"),("number","Number"),
-                                  ("date","Date"),("yesno","Yes / No"),
-                                  ("choice","Multiple choice"),
-                                  ("table","Table"),
-                                  ("matrix","Matrix (rows + columns)")] %}
-              <option value="{{ val }}" {{ "selected" if q.type==val }}>{{ lbl }}</option>
+              {% for val, key in [("text","t_text"),("number","t_number"),
+                                  ("date","t_date"),("yesno","t_yesno"),
+                                  ("choice","t_choice"),
+                                  ("table","t_table"),
+                                  ("matrix","t_matrix")] %}
+              <option value="{{ val }}" {{ "selected" if q.type==val }}>{{ atr[key] }}</option>
               {% endfor %}
             </select>
           </label>
@@ -41,8 +41,7 @@
 
         <!-- Multiple-choice editor -->
         <div class="choice-editor" {{ '' if q.type == 'choice' else 'hidden' }}>
-          <p class="field-hint" style="margin-bottom:6px">Answer choices the
-            client can pick from:</p>
+          <p class="field-hint" style="margin-bottom:6px">{{ atr.a_choices_intro }}</p>
           <div class="choice-list">
             {% if q.type == 'choice' and q.options %}
               {% for opt in q.options %}
@@ -50,20 +49,19 @@
                 <input type="text" class="choice-input" value="{{ opt }}"
                        placeholder="Choice text">
                 <button type="button" class="icon-btn icon-btn--danger"
-                        title="Remove choice" onclick="removeChoice(this)">
+                        title="{{ atr.a_remove }}" onclick="removeChoice(this)">
                   &times;</button>
               </div>
               {% endfor %}
             {% endif %}
           </div>
           <button type="button" class="btn btn--sm secondary"
-                  onclick="addChoice(this)">+ Add choice</button>
+                  onclick="addChoice(this)">{{ atr.a_add_choice }}</button>
         </div>
 
         <!-- Table editor -->
         <div class="table-editor" {{ '' if q.type == 'table' else 'hidden' }}>
-          <p class="field-hint" style="margin-bottom:6px">Column headers the
-            client fills in:</p>
+          <p class="field-hint" style="margin-bottom:6px">{{ atr.a_cols_intro }}</p>
           <div class="choice-list">
             {% if q.type == 'table' and q.columns %}
               {% for col in q.columns %}
@@ -71,27 +69,26 @@
                 <input type="text" class="column-input" value="{{ col }}"
                        placeholder="Column header" oninput="onTableEdit(this)">
                 <button type="button" class="icon-btn icon-btn--danger"
-                        title="Remove column"
+                        title="{{ atr.a_remove }}"
                         onclick="removeColumn(this)">&times;</button>
               </div>
               {% endfor %}
             {% endif %}
           </div>
           <button type="button" class="btn btn--sm secondary"
-                  onclick="addColumn(this)">+ Add column</button>
-          <label style="max-width:180px">Number of rows
+                  onclick="addColumn(this)">{{ atr.a_add_column }}</button>
+          <label style="max-width:180px">{{ atr.a_num_rows }}
             <input type="number" class="rows-input" min="1" max="50"
                    value="{{ q.rows if q.type == 'table' and q.rows else 3 }}"
                    oninput="onTableEdit(this)">
           </label>
-          <p class="field-hint" style="margin:12px 0 4px">Preview</p>
+          <p class="field-hint" style="margin:12px 0 4px">{{ atr.a_preview }}</p>
           <div class="table-preview"></div>
         </div>
 
         <!-- Matrix editor (columns + row labels) -->
         <div class="matrix-editor" {{ '' if q.type == 'matrix' else 'hidden' }}>
-          <p class="field-hint" style="margin-bottom:6px">Column headers
-            (top row):</p>
+          <p class="field-hint" style="margin-bottom:6px">{{ atr.a_cols_top }}</p>
           <div class="mcol-list">
             {% if q.type == 'matrix' and q.columns %}
               {% for col in q.columns %}
@@ -99,16 +96,15 @@
                 <input type="text" class="mcol-input" value="{{ col }}"
                        placeholder="Column header" oninput="onMatrixEdit(this)">
                 <button type="button" class="icon-btn icon-btn--danger"
-                        title="Remove column"
+                        title="{{ atr.a_remove }}"
                         onclick="removeMatrixItem(this)">&times;</button>
               </div>
               {% endfor %}
             {% endif %}
           </div>
           <button type="button" class="btn btn--sm secondary"
-                  onclick="addMatrixCol(this)">+ Add column</button>
-          <p class="field-hint" style="margin:14px 0 6px">Row labels
-            (left column):</p>
+                  onclick="addMatrixCol(this)">{{ atr.a_add_column }}</button>
+          <p class="field-hint" style="margin:14px 0 6px">{{ atr.a_rows_left }}</p>
           <div class="mrow-list">
             {% if q.type == 'matrix' and q.row_labels %}
               {% for lbl in q.row_labels %}
@@ -116,15 +112,15 @@
                 <input type="text" class="mrow-input" value="{{ lbl }}"
                        placeholder="Row label" oninput="onMatrixEdit(this)">
                 <button type="button" class="icon-btn icon-btn--danger"
-                        title="Remove row"
+                        title="{{ atr.a_remove }}"
                         onclick="removeMatrixItem(this)">&times;</button>
               </div>
               {% endfor %}
             {% endif %}
           </div>
           <button type="button" class="btn btn--sm secondary"
-                  onclick="addMatrixRow(this)">+ Add row</button>
-          <p class="field-hint" style="margin:12px 0 4px">Preview</p>
+                  onclick="addMatrixRow(this)">{{ atr.a_add_row }}</button>
+          <p class="field-hint" style="margin:12px 0 4px">{{ atr.a_preview }}</p>
           <div class="matrix-preview"></div>
         </div>
 
@@ -141,11 +137,11 @@
           <label class="inline-check">
             <input type="checkbox" onchange="syncReq(this)"
                    {{ "checked" if q.required }}>
-            Required
+            {{ atr.a_required }}
             <input type="hidden" name="q_required_flag"
                    value="{{ '1' if q.required else '0' }}"></label>
           <button type="button" class="btn btn--sm danger"
-                  onclick="this.closest('.q-row').remove()">Remove</button>
+                  onclick="this.closest('.q-row').remove()">{{ atr.a_remove }}</button>
         </div>
       </div>
       {% endfor %}
@@ -153,60 +149,58 @@
   </div>
 
   <button type="button" class="btn secondary" onclick="addQuestion()">
-    + Add question</button>
+    {{ atr.a_add_question }}</button>
 
   <div class="btn-row" style="margin-top:24px">
-    <button type="submit" class="btn">Save questionnaire</button>
-    <a class="btn secondary" href="{{ url_for('admin') }}">Cancel</a>
+    <button type="submit" class="btn">{{ atr.a_save }}</button>
+    <a class="btn secondary" href="{{ url_for('admin') }}">{{ atr.a_cancel }}</a>
   </div>
 </form>
 
 <template id="qTemplate">
   <div class="q-row">
     <div class="q-grid">
-      <label>Prompt <input type="text" name="q_prompt"></label>
-      <label>Type
+      <label>{{ atr.a_prompt }} <input type="text" name="q_prompt"></label>
+      <label>{{ atr.a_type }}
         <select name="q_type" onchange="onTypeChange(this)">
-          <option value="text">Short text</option>
-          <option value="number">Number</option>
-          <option value="date">Date</option>
-          <option value="yesno">Yes / No</option>
-          <option value="choice">Multiple choice</option>
-          <option value="table">Table</option>
-          <option value="matrix">Matrix (rows + columns)</option>
+          <option value="text">{{ atr.t_text }}</option>
+          <option value="number">{{ atr.t_number }}</option>
+          <option value="date">{{ atr.t_date }}</option>
+          <option value="yesno">{{ atr.t_yesno }}</option>
+          <option value="choice">{{ atr.t_choice }}</option>
+          <option value="table">{{ atr.t_table }}</option>
+          <option value="matrix">{{ atr.t_matrix }}</option>
         </select>
       </label>
     </div>
     <div class="choice-editor" hidden>
-      <p class="field-hint" style="margin-bottom:6px">Answer choices the client
-        can pick from:</p>
+      <p class="field-hint" style="margin-bottom:6px">{{ atr.a_choices_intro }}</p>
       <div class="choice-list"></div>
       <button type="button" class="btn btn--sm secondary"
-              onclick="addChoice(this)">+ Add choice</button>
+              onclick="addChoice(this)">{{ atr.a_add_choice }}</button>
     </div>
     <div class="table-editor" hidden>
-      <p class="field-hint" style="margin-bottom:6px">Column headers the client
-        fills in:</p>
+      <p class="field-hint" style="margin-bottom:6px">{{ atr.a_cols_intro }}</p>
       <div class="choice-list"></div>
       <button type="button" class="btn btn--sm secondary"
-              onclick="addColumn(this)">+ Add column</button>
-      <label style="max-width:180px">Number of rows
+              onclick="addColumn(this)">{{ atr.a_add_column }}</button>
+      <label style="max-width:180px">{{ atr.a_num_rows }}
         <input type="number" class="rows-input" min="1" max="50" value="3"
                oninput="onTableEdit(this)">
       </label>
-      <p class="field-hint" style="margin:12px 0 4px">Preview</p>
+      <p class="field-hint" style="margin:12px 0 4px">{{ atr.a_preview }}</p>
       <div class="table-preview"></div>
     </div>
     <div class="matrix-editor" hidden>
-      <p class="field-hint" style="margin-bottom:6px">Column headers (top row):</p>
+      <p class="field-hint" style="margin-bottom:6px">{{ atr.a_cols_top }}</p>
       <div class="mcol-list"></div>
       <button type="button" class="btn btn--sm secondary"
-              onclick="addMatrixCol(this)">+ Add column</button>
-      <p class="field-hint" style="margin:14px 0 6px">Row labels (left column):</p>
+              onclick="addMatrixCol(this)">{{ atr.a_add_column }}</button>
+      <p class="field-hint" style="margin:14px 0 6px">{{ atr.a_rows_left }}</p>
       <div class="mrow-list"></div>
       <button type="button" class="btn btn--sm secondary"
-              onclick="addMatrixRow(this)">+ Add row</button>
-      <p class="field-hint" style="margin:12px 0 4px">Preview</p>
+              onclick="addMatrixRow(this)">{{ atr.a_add_row }}</button>
+      <p class="field-hint" style="margin:12px 0 4px">{{ atr.a_preview }}</p>
       <div class="matrix-preview"></div>
     </div>
     <input type="hidden" name="q_options" value="">
@@ -215,46 +209,46 @@
     <div class="q-row__foot">
       <label class="inline-check">
         <input type="checkbox" onchange="syncReq(this)">
-        Required
+        {{ atr.a_required }}
         <input type="hidden" name="q_required_flag" value="0"></label>
       <button type="button" class="btn btn--sm danger"
-              onclick="this.closest('.q-row').remove()">Remove</button>
+              onclick="this.closest('.q-row').remove()">{{ atr.a_remove }}</button>
     </div>
   </div>
 </template>
 
 <template id="choiceTemplate">
   <div class="choice-item">
-    <input type="text" class="choice-input" placeholder="Choice text">
+    <input type="text" class="choice-input" placeholder="">
     <button type="button" class="icon-btn icon-btn--danger"
-            title="Remove choice" onclick="removeChoice(this)">&times;</button>
+            title="{{ atr.a_remove }}" onclick="removeChoice(this)">&times;</button>
   </div>
 </template>
 
 <template id="columnTemplate">
   <div class="choice-item">
-    <input type="text" class="column-input" placeholder="Column header"
+    <input type="text" class="column-input" placeholder=""
            oninput="onTableEdit(this)">
     <button type="button" class="icon-btn icon-btn--danger"
-            title="Remove column" onclick="removeColumn(this)">&times;</button>
+            title="{{ atr.a_remove }}" onclick="removeColumn(this)">&times;</button>
   </div>
 </template>
 
 <template id="mcolTemplate">
   <div class="choice-item">
-    <input type="text" class="mcol-input" placeholder="Column header"
+    <input type="text" class="mcol-input" placeholder=""
            oninput="onMatrixEdit(this)">
     <button type="button" class="icon-btn icon-btn--danger"
-            title="Remove column" onclick="removeMatrixItem(this)">&times;</button>
+            title="{{ atr.a_remove }}" onclick="removeMatrixItem(this)">&times;</button>
   </div>
 </template>
 
 <template id="mrowTemplate">
   <div class="choice-item">
-    <input type="text" class="mrow-input" placeholder="Row label"
+    <input type="text" class="mrow-input" placeholder=""
            oninput="onMatrixEdit(this)">
     <button type="button" class="icon-btn icon-btn--danger"
-            title="Remove row" onclick="removeMatrixItem(this)">&times;</button>
+            title="{{ atr.a_remove }}" onclick="removeMatrixItem(this)">&times;</button>
   </div>
 </template>
 

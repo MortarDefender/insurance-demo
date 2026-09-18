@@ -1,26 +1,26 @@
 {% extends "base.html" %}
 {% import "_icons.html" as ic %}
-{% block title %}Admin - Templates{% endblock %}
+{% block title %}{{ atr.a_templates }}{% endblock %}
 {% block appbar_actions %}
-  <span class="muted" style="color:#b9c6dc">Admin</span>
-  <a href="{{ url_for('logout') }}">Log out</a>
+  <span class="muted" style="color:#b9c6dc">{{ atr.a_admin }}</span>
+  <a href="{{ url_for('logout') }}">{{ atr.a_logout }}</a>
 {% endblock %}
 {% block content %}
 <div class="page-head">
-  <p class="eyebrow">Administration</p>
-  <h1>Templates</h1>
-  <p class="help">Create questionnaires and documents, then generate a secure,
-    per-client link to share.</p>
+  <p class="eyebrow">{{ atr.a_administration }}</p>
+  <h1>{{ atr.a_templates }}</h1>
+  <p class="help">{{ atr.a_templates_intro }}</p>
 </div>
 
 <div class="section-title">
-  <h2>Questionnaires</h2>
+  <h2>{{ atr.a_questionnaires }}</h2>
   <a class="icon-btn icon-btn--primary" href="{{ url_for('questionnaire_new') }}"
-     title="New questionnaire" aria-label="New questionnaire">{{ ic.plus() }}</a>
+     title="{{ atr.a_new_questionnaire }}"
+     aria-label="{{ atr.a_new_questionnaire }}">{{ ic.plus() }}</a>
 </div>
 <div class="table-wrap">
 <table>
-  <thead><tr><th>Name</th><th>Questions</th><th style="text-align:end">Actions</th></tr></thead>
+  <thead><tr><th>{{ atr.a_name }}</th><th>{{ atr.a_questions }}</th><th style="text-align:end">{{ atr.a_actions }}</th></tr></thead>
   <tbody>
   {% for q in questionnaires %}
     <tr>
@@ -29,36 +29,37 @@
       <td>
         <div class="btn-row btn-row--end">
           <button class="icon-btn icon-btn--primary"
-            title="Share" aria-label="Share"
+            title="{{ atr.a_share }}" aria-label="{{ atr.a_share }}"
             onclick="openShare('questionnaire','{{ q.id }}','{{ q.name }}')">
             {{ ic.share() }}</button>
-          <a class="icon-btn" title="Edit" aria-label="Edit"
+          <a class="icon-btn" title="{{ atr.a_edit }}" aria-label="{{ atr.a_edit }}"
              href="{{ url_for('questionnaire_edit', qid=q.id) }}">{{ ic.edit() }}</a>
           <form method="post" class="icon-btn__form"
                 action="{{ url_for('questionnaire_delete', qid=q.id) }}">
-            <button class="icon-btn icon-btn--danger" title="Delete"
-              aria-label="Delete"
-              onclick="return confirm('Delete this questionnaire?')">
+            <button class="icon-btn icon-btn--danger" title="{{ atr.a_delete }}"
+              aria-label="{{ atr.a_delete }}"
+              onclick="return confirm('{{ atr.a_delete_q_confirm }}')">
               {{ ic.trash() }}</button>
           </form>
         </div>
       </td>
     </tr>
   {% else %}
-    <tr class="empty-row"><td colspan="3">No questionnaires yet. Create your first one above.</td></tr>
+    <tr class="empty-row"><td colspan="3">{{ atr.a_no_questionnaires }}</td></tr>
   {% endfor %}
   </tbody>
 </table>
 </div>
 
 <div class="section-title">
-  <h2>Documents</h2>
+  <h2>{{ atr.a_documents }}</h2>
   <a class="icon-btn icon-btn--primary" href="{{ url_for('document_new') }}"
-     title="Upload document" aria-label="Upload document">{{ ic.plus() }}</a>
+     title="{{ atr.a_upload_document }}"
+     aria-label="{{ atr.a_upload_document }}">{{ ic.plus() }}</a>
 </div>
 <div class="table-wrap">
 <table>
-  <thead><tr><th>Name</th><th>File</th><th style="text-align:end">Actions</th></tr></thead>
+  <thead><tr><th>{{ atr.a_name }}</th><th>{{ atr.a_file }}</th><th style="text-align:end">{{ atr.a_actions }}</th></tr></thead>
   <tbody>
   {% for d in documents %}
     <tr>
@@ -67,21 +68,21 @@
       <td>
         <div class="btn-row btn-row--end">
           <button class="icon-btn icon-btn--primary"
-            title="Share" aria-label="Share"
+            title="{{ atr.a_share }}" aria-label="{{ atr.a_share }}"
             onclick="openShare('document','{{ d.id }}','{{ d.display_name }}')">
             {{ ic.share() }}</button>
           <form method="post" class="icon-btn__form"
                 action="{{ url_for('document_delete', did=d.id) }}">
-            <button class="icon-btn icon-btn--danger" title="Delete"
-              aria-label="Delete"
-              onclick="return confirm('Delete this document?')">
+            <button class="icon-btn icon-btn--danger" title="{{ atr.a_delete }}"
+              aria-label="{{ atr.a_delete }}"
+              onclick="return confirm('{{ atr.a_delete_d_confirm }}')">
               {{ ic.trash() }}</button>
           </form>
         </div>
       </td>
     </tr>
   {% else %}
-    <tr class="empty-row"><td colspan="3">No documents yet. Upload your first one above.</td></tr>
+    <tr class="empty-row"><td colspan="3">{{ atr.a_no_documents }}</td></tr>
   {% endfor %}
   </tbody>
 </table>
@@ -90,32 +91,31 @@
 <div class="modal-backdrop" id="shareModal">
   <div class="modal">
     <div class="modal__head">
-      <h3 id="shareTitle">Share</h3>
+      <h3 id="shareTitle">{{ atr.a_share }}</h3>
       <button class="modal__close" type="button" onclick="closeShare()"
-              aria-label="Close">&times;</button>
+              aria-label="{{ atr.a_close }}">&times;</button>
     </div>
-    <p class="help">Enter the client's details to generate a unique, secure link.</p>
-    <label>First name <input type="text" id="firstName"></label>
-    <label>Last name <input type="text" id="lastName"></label>
-    <label>ID (optional)
-      <input type="text" id="clientId" placeholder="e.g. policy or client number">
-      <span class="field-hint">Added to the email subject and used as the
-        password to open the emailed PDF.</span>
+    <p class="help">{{ atr.a_share_intro }}</p>
+    <label>{{ atr.a_first_name }} <input type="text" id="firstName"></label>
+    <label>{{ atr.a_last_name }} <input type="text" id="lastName"></label>
+    <label>{{ atr.a_id_optional }}
+      <input type="text" id="clientId">
+      <span class="field-hint">{{ atr.a_id_hint }}</span>
     </label>
-    <label>Link expires in (days)
+    <label>{{ atr.a_expiry }}
       <input type="number" id="expiryDays" min="1" max="365"
              value="{{ settings.LINK_EXPIRY_DAYS }}">
     </label>
     <input type="hidden" id="shareKind">
     <input type="hidden" id="shareTemplateId">
     <div class="btn-row" style="margin-top:20px">
-      <button class="btn" onclick="generateLink()">Generate link</button>
-      <button class="btn secondary" onclick="closeShare()">Close</button>
+      <button class="btn" onclick="generateLink()">{{ atr.a_generate }}</button>
+      <button class="btn secondary" onclick="closeShare()">{{ atr.a_close }}</button>
     </div>
     <div id="linkResult" class="link-box" style="display:none"></div>
     <div id="linkActions" style="display:none; margin-top:10px">
       <button class="btn btn--sm secondary" type="button" onclick="copyLink()">
-        Copy link</button>
+        {{ atr.a_copy }}</button>
       <span id="copyStatus" class="help" style="margin-inline-start:8px"></span>
     </div>
   </div>
@@ -125,7 +125,8 @@
 function openShare(kind, id, name) {
   document.getElementById('shareKind').value = kind;
   document.getElementById('shareTemplateId').value = id;
-  document.getElementById('shareTitle').textContent = 'Share: ' + name;
+  document.getElementById('shareTitle').textContent =
+    '{{ atr.a_share }}: ' + name;
   document.getElementById('firstName').value = '';
   document.getElementById('lastName').value = '';
   document.getElementById('clientId').value = '';
@@ -185,7 +186,7 @@ async function copyLink() {
     try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
     document.body.removeChild(ta);
   }
-  status.textContent = ok ? 'Copied to clipboard' : 'Copy failed, select and copy manually';
+  status.textContent = ok ? '{{ atr.a_copied }}' : '{{ atr.a_copy_failed }}';
 }
 </script>
 {% endblock %}

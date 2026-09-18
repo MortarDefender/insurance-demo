@@ -26,7 +26,7 @@ def _serializer(secret_key):
 
 
 def make_link_token(secret_key, *, kind, template_id, first_name, last_name,
-                    expiry_days, client_id=""):
+                    expiry_days, client_id="", lang=""):
     if kind not in ("questionnaire", "document"):
         raise ValueError("kind must be 'questionnaire' or 'document'")
     payload = {
@@ -42,6 +42,10 @@ def make_link_token(secret_key, *, kind, template_id, first_name, last_name,
         # Per-client expiry, signed into the token so it cannot be tampered with.
         "expiry_days": int(expiry_days),
     }
+    # Optional forced language for the client page ('en'/'he'). When absent the
+    # guest page falls back to detecting direction from the content.
+    if lang in ("en", "he"):
+        payload["lang"] = lang
     return _serializer(secret_key).dumps(payload)
 
 

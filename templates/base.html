@@ -1,5 +1,5 @@
 <!doctype html>
-{% set _dir = dir | default('ltr') %}
+{% set _dir = dir | default(admin_dir | default('ltr')) %}
 <html lang="{{ 'he' if _dir == 'rtl' else 'en' }}" dir="{{ _dir }}">
 <head>
   <meta charset="utf-8">
@@ -19,7 +19,17 @@
           <span class="brand__sub">Insurance Services</span>
         </span>
       </a>
-      <nav class="appbar__actions">{% block appbar_actions %}{% endblock %}</nav>
+      <nav class="appbar__actions">
+        {% block appbar_actions %}{% endblock %}
+        {% if show_lang_toggle %}
+        <span class="lang-toggle">
+          <a href="{{ url_for('set_language', lang='en') }}"
+             class="{{ 'active' if admin_lang == 'en' else '' }}">EN</a>
+          <a href="{{ url_for('set_language', lang='he') }}"
+             class="{{ 'active' if admin_lang == 'he' else '' }}">עב</a>
+        </span>
+        {% endif %}
+      </nav>
     </div>
   </header>
   {% endblock %}

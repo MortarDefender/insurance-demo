@@ -1,25 +1,24 @@
 {% extends "base.html" %}
-{% block title %}Upload document{% endblock %}
+{% block title %}{{ atr.a_upload_title }}{% endblock %}
 {% block appbar_actions %}
-  <a href="{{ url_for('admin') }}">Back to templates</a>
+  <a href="{{ url_for('admin') }}">{{ atr.a_back }}</a>
 {% endblock %}
 {% block content %}
 <div class="page-head">
-  <p class="eyebrow">Documents</p>
-  <h1>Upload document template</h1>
-  <p class="help">Clients will download this file, sign it, and upload their
-    signed copy back to you.</p>
+  <p class="eyebrow">{{ atr.a_documents }}</p>
+  <h1>{{ atr.a_upload_title }}</h1>
+  <p class="help">{{ atr.a_upload_intro }}</p>
 </div>
 <form method="post" enctype="multipart/form-data">
   <div class="card stack">
-    <label>Display name
+    <label>{{ atr.a_display_name }}
       <input type="text" name="display_name" required></label>
-    <label>File (pdf, doc, docx)
+    <label>{{ atr.a_file_types }}
       <input type="file" name="file" accept=".pdf,.doc,.docx" required></label>
   </div>
   <div class="btn-row">
-    <button type="submit" class="btn">Upload</button>
-    <a class="btn secondary" href="{{ url_for('admin') }}">Cancel</a>
+    <button type="submit" class="btn">{{ atr.a_upload }}</button>
+    <a class="btn secondary" href="{{ url_for('admin') }}">{{ atr.a_cancel }}</a>
   </div>
 </form>
 {% endblock %}
