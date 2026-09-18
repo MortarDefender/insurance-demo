@@ -4,7 +4,8 @@ import os
 import pytest
 
 from textdir import is_rtl, direction
-from pdf_report import build_questionnaire_pdf, _order_cells, _col_widths
+from pdf_report import (build_questionnaire_pdf, _order_cells, _col_widths,
+                        _table_visual_order)
 from app import create_app
 from links import make_link_token
 
@@ -62,6 +63,15 @@ def test_rtl_puts_prompt_on_the_right():
     # right side of the page.
     assert _order_cells(True, "PROMPT", "ANSWER") == ["ANSWER", "PROMPT"]
     assert _col_widths(True)[0] > _col_widths(True)[1]
+
+
+def test_table_columns_reverse_for_rtl_pdf():
+    # English/LTR keeps source column order.
+    assert _table_visual_order(["Medication", "Dose"], []) == [0, 1]
+    # Hebrew/RTL reverses so the first logical column (right) reads first.
+    assert _table_visual_order(["תרופה", "מינון"], []) == [1, 0]
+    # Direction can also come from the cell data, not just headers.
+    assert _table_visual_order(["A", "B"], [["אקמול", "500"]]) == [1, 0]
 
 
 @pytest.fixture

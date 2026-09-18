@@ -88,6 +88,15 @@ def _col_widths(is_rtl_doc):
     return [100 * mm, 60 * mm] if is_rtl_doc else [60 * mm, 100 * mm]
 
 
+def _table_visual_order(columns, grid):
+    """Return the left-to-right column index order for rendering. RTL content
+    reverses it so the first logical column reads on the right."""
+    rtl = _is_rtl(" ".join(columns)) or any(
+        _is_rtl(" ".join(str(c) for c in row)) for row in grid)
+    order = list(range(len(columns)))
+    return order[::-1] if rtl else order
+
+
 def _table_answer_flowable(answer, styles, font_ok):
     """Render a table-type answer ({'columns': [...], 'rows': [[...], ...]}) as a
     nested reportlab Table so it appears as a real grid inside the answer cell."""
@@ -97,13 +106,17 @@ def _table_answer_flowable(answer, styles, font_ok):
         return _cell("(no answer)", base_style=styles["QAnswer"],
                      font_ok=font_ok)
 
-    header = [_cell(col, base_style=styles["QPrompt"], font_ok=font_ok)
-              for col in columns]
+    # For RTL content, the first logical column reads on the right, so reverse
+    # the visual column order (header and every row together).
+    order = _table_visual_order(columns, grid)
+
+    header = [_cell(columns[i], base_style=styles["QPrompt"], font_ok=font_ok)
+              for i in order]
     data = [header]
     for row in grid:
         cells = []
-        for c in range(len(columns)):
-            val = row[c] if c < len(row) else ""
+        for i in order:
+            val = row[i] if i < len(row) else ""
             cells.append(_cell(val or "-", base_style=styles["QAnswer"],
                                font_ok=font_ok))
         data.append(cells)
