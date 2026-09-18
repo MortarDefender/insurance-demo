@@ -15,8 +15,9 @@ cp config.example.py config.py   # then edit config.py
 python app.py
 ```
 
-Open http://127.0.0.1:5000 and log in at `/login`.
+Open http://127.0.0.1:9900 and log in at `/login`.
 (The bundled local `config.py` uses password `admin123` by default. Change it.)
+(Port 9900 is the default because macOS AirPlay Receiver occupies 5000. Set `PORT` in `config.py` to change it.)
 
 ## How it works
 
@@ -40,6 +41,7 @@ Edit `config.py` (never commit it):
 - `SECRET_KEY` - long random string; signs links and sessions.
 - `ADMIN_EMAIL` - where results are emailed.
 - `LINK_EXPIRY_DAYS` - how long a client link is valid (default 7).
+- `PORT` - local dev server port (default 9900; 5000 is taken by macOS AirPlay).
 - `MAIL_MODE` - `outbox` (local, writes to `outbox/`) or `smtp` (real email).
 - `SMTP_*` - only used in `smtp` mode.
 - `MAX_UPLOAD_MB`, `ALLOWED_UPLOAD_EXTENSIONS` - upload limits.

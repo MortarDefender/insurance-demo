@@ -7,7 +7,7 @@ import urllib.request
 import urllib.parse
 import http.cookiejar
 
-BASE = "http://127.0.0.1:5000"
+BASE = os.environ.get("SMOKE_BASE", "http://127.0.0.1:9900")
 cj = http.cookiejar.CookieJar()
 admin = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cj))
 

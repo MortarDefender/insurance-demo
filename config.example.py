@@ -12,6 +12,9 @@ ADMIN_EMAIL = "admin@example.com"
 # How many days a client link stays valid.
 LINK_EXPIRY_DAYS = 7
 
+# Local dev server port. 5000 is taken by macOS AirPlay Receiver, so default 9900.
+PORT = 9900
+
 # "outbox" writes emails to ./outbox for local testing.
 # "smtp" sends real email using the SMTP_* settings below.
 MAIL_MODE = "outbox"

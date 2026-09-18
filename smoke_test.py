@@ -1,4 +1,4 @@
-"""End-to-end smoke test against the running server on port 5000."""
+"""End-to-end smoke test against the running server (default port 9900)."""
 import json
 import re
 import os
@@ -7,7 +7,7 @@ import urllib.request
 import urllib.parse
 import http.cookiejar
 
-BASE = "http://127.0.0.1:5000"
+BASE = os.environ.get("SMOKE_BASE", "http://127.0.0.1:9900")
 cj = http.cookiejar.CookieJar()
 opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cj))
 

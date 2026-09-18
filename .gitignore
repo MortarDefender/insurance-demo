@@ -8,6 +8,12 @@ config.py
 outbox/
 uploads_tmp/
 
+# Runtime template data (created by the admin at runtime; not source)
+templates_store/questionnaires/*
+templates_store/documents/*
+!templates_store/questionnaires/.gitkeep
+!templates_store/documents/.gitkeep
+
 # Python
 __pycache__/
 *.pyc
