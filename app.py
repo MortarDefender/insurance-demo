@@ -167,6 +167,8 @@ def register_admin_routes(app):
         options = form.getlist("q_options")
         # Fixed row count for table questions (one entry per question row).
         table_rows = form.getlist("q_rows")
+        # Row labels for matrix questions (pipe-joined, one entry per question).
+        row_labels = form.getlist("q_rowlabels")
         # Checkboxes don't submit when unchecked, so a hidden flag per row
         # carries the required state and keeps indexes aligned.
         req_flags = form.getlist("q_required_flag")
@@ -176,7 +178,8 @@ def register_admin_routes(app):
             if not prompt:
                 continue
             qtype = types[i] if i < len(types) else "text"
-            valid_types = ("text", "number", "date", "yesno", "choice", "table")
+            valid_types = ("text", "number", "date", "yesno", "choice",
+                           "table", "matrix")
             if qtype not in valid_types:
                 qtype = "text"
             opts_raw = options[i] if i < len(options) else ""
@@ -201,6 +204,17 @@ def register_admin_routes(app):
                     except (ValueError, TypeError):
                         n = 1
                     q["rows"] = max(1, min(n, 50))  # clamp to a sane range
+                else:
+                    q["type"] = "text"
+            elif qtype == "matrix":
+                # A matrix has both column headers (q_options) and row labels
+                # (q_rowlabels); the client fills only the inner cells. Needs at
+                # least one of each, else fall back to free text.
+                labels_raw = row_labels[i] if i < len(row_labels) else ""
+                labels = [x.strip() for x in labels_raw.split("|") if x.strip()]
+                if len(opts) >= 1 and len(labels) >= 1:
+                    q["columns"] = opts
+                    q["row_labels"] = labels
                 else:
                     q["type"] = "text"
             questions.append(q)
@@ -350,16 +364,13 @@ def register_guest_routes(app):
                         cols = question.get("columns", [])
                         nrows = int(question.get("rows", 1))
                         grid = []
-                        any_filled = False
                         all_filled = True
                         for r in range(nrows):
                             row_vals = []
                             for c in range(len(cols)):
                                 cell = request.form.get(
                                     f"answer_{i}_r{r}_c{c}", "").strip()
-                                if cell:
-                                    any_filled = True
-                                else:
+                                if not cell:
                                     all_filled = False
                                 row_vals.append(cell)
                             grid.append(row_vals)
@@ -368,6 +379,25 @@ def register_guest_routes(app):
                             missing = True
                         answers.append((question["prompt"],
                                         {"columns": cols, "rows": grid}))
+                    elif question.get("type") == "matrix":
+                        cols = question.get("columns", [])
+                        labels = question.get("row_labels", [])
+                        grid = []
+                        all_filled = True
+                        for r in range(len(labels)):
+                            row_vals = []
+                            for c in range(len(cols)):
+                                cell = request.form.get(
+                                    f"answer_{i}_r{r}_c{c}", "").strip()
+                                if not cell:
+                                    all_filled = False
+                                row_vals.append(cell)
+                            grid.append(row_vals)
+                        if question.get("required") and not all_filled:
+                            missing = True
+                        answers.append((question["prompt"],
+                                        {"columns": cols, "row_labels": labels,
+                                         "rows": grid}))
                     else:
                         val = request.form.get(f"answer_{i}", "").strip()
                         if question.get("required") and not val:
@@ -382,12 +412,21 @@ def register_guest_routes(app):
                 for prompt, val in answers:
                     body_lines.append(f"Q: {prompt}")
                     if isinstance(val, dict):
-                        # Render a table answer as a simple text grid.
                         cols = val.get("columns", [])
-                        body_lines.append("   " + " | ".join(cols))
-                        for row in val.get("rows", []):
-                            cells = [c or "-" for c in row]
-                            body_lines.append("   " + " | ".join(cells))
+                        labels = val.get("row_labels")
+                        if labels:
+                            # Matrix: header row has a leading blank corner,
+                            # each data row is prefixed with its label.
+                            body_lines.append("   " + " | ".join([""] + cols))
+                            for lbl, row in zip(labels, val.get("rows", [])):
+                                cells = [c or "-" for c in row]
+                                body_lines.append("   " + " | ".join([lbl] + cells))
+                        else:
+                            # Plain table: columns only.
+                            body_lines.append("   " + " | ".join(cols))
+                            for row in val.get("rows", []):
+                                cells = [c or "-" for c in row]
+                                body_lines.append("   " + " | ".join(cells))
                     else:
                         body_lines.append(f"A: {val or '(no answer)'}")
                     body_lines.append("")

@@ -98,34 +98,55 @@ def _table_visual_order(columns, grid):
 
 
 def _table_answer_flowable(answer, styles, font_ok):
-    """Render a table-type answer ({'columns': [...], 'rows': [[...], ...]}) as a
-    nested reportlab Table so it appears as a real grid inside the answer cell."""
+    """Render a table/matrix answer as a nested reportlab Table so it appears as
+    a real grid inside the answer cell.
+
+    Plain table: {'columns': [...], 'rows': [[...], ...]}.
+    Matrix: adds 'row_labels': [...], drawn as a left (or right, for RTL) header
+    column with a blank top-left corner."""
     columns = answer.get("columns", [])
     grid = answer.get("rows", [])
+    labels = answer.get("row_labels")
     if not columns:
         return _cell("(no answer)", base_style=styles["QAnswer"],
                      font_ok=font_ok)
 
-    # For RTL content, the first logical column reads on the right, so reverse
-    # the visual column order (header and every row together).
-    order = _table_visual_order(columns, grid)
-
-    header = [_cell(columns[i], base_style=styles["QPrompt"], font_ok=font_ok)
-              for i in order]
-    data = [header]
+    # Direction from all text in the answer.
+    sample = list(columns) + list(labels or [])
     for row in grid:
-        cells = []
-        for i in order:
-            val = row[i] if i < len(row) else ""
-            cells.append(_cell(val or "-", base_style=styles["QAnswer"],
-                               font_ok=font_ok))
-        data.append(cells)
+        sample.extend(str(c) for c in row)
+    rtl = _is_rtl(" ".join(sample))
+    order = list(range(len(columns)))
+    if rtl:
+        order = order[::-1]
 
-    # Distribute the answer column width (~100mm) across the table columns.
+    def q(text):
+        return _cell(text, base_style=styles["QPrompt"], font_ok=font_ok)
+
+    def a(text):
+        return _cell(text or "-", base_style=styles["QAnswer"], font_ok=font_ok)
+
+    header = [q(columns[i]) for i in order]
+    data_rows = []
+    for r, row in enumerate(grid):
+        cells = [a(row[i] if i < len(row) else "") for i in order]
+        if labels is not None:
+            label = q(labels[r] if r < len(labels) else "")
+            # Label goes on the right for RTL, else on the left.
+            cells = cells + [label] if rtl else [label] + cells
+        data_rows.append(cells)
+
+    if labels is not None:
+        # Blank top-left (or top-right for RTL) corner cell.
+        header = header + [q("")] if rtl else [q("")] + header
+
+    data = [header] + data_rows
+
+    ncols = len(header)
     total = 96 * mm
-    col_w = max(18 * mm, total / max(1, len(columns)))
-    inner = Table(data, colWidths=[col_w] * len(columns))
-    inner.setStyle(TableStyle([
+    col_w = max(16 * mm, total / max(1, ncols))
+    inner = Table(data, colWidths=[col_w] * ncols)
+    style = [
         ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#cccccc")),
         ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#f2f4f8")),
         ("VALIGN", (0, 0), (-1, -1), "TOP"),
@@ -133,7 +154,13 @@ def _table_answer_flowable(answer, styles, font_ok):
         ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
         ("LEFTPADDING", (0, 0), (-1, -1), 5),
         ("RIGHTPADDING", (0, 0), (-1, -1), 5),
-    ]))
+    ]
+    if labels is not None:
+        # Shade the row-label column too (right-most for RTL, else left-most).
+        label_col = -1 if rtl else 0
+        style.append(("BACKGROUND", (label_col, 1), (label_col, -1),
+                      colors.HexColor("#f2f4f8")))
+    inner.setStyle(TableStyle(style))
     return inner
 
 

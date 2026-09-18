@@ -56,6 +56,26 @@
               </tbody>
             </table>
           </div>
+        {% elif question.type == "matrix" %}
+          <div class="table-wrap" style="margin-top:8px">
+            <table class="answer-grid">
+              <thead><tr>
+                <th></th>
+                {% for col in question.columns %}<th>{{ col }}</th>{% endfor %}
+              </tr></thead>
+              <tbody>
+                {% for label in question.row_labels %}
+                <tr>
+                  <th scope="row">{{ label }}</th>
+                  {% for c in range(question.columns|length) %}
+                  <td><input type="text" dir="auto"
+                       name="{{ nm }}_r{{ loop.index0 }}_c{{ c }}"></td>
+                  {% endfor %}
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
         {% else %}
           <input type="text" name="{{ nm }}" dir="auto">
         {% endif %}

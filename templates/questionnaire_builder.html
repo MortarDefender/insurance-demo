@@ -31,7 +31,8 @@
               {% for val, lbl in [("text","Short text"),("number","Number"),
                                   ("date","Date"),("yesno","Yes / No"),
                                   ("choice","Multiple choice"),
-                                  ("table","Table")] %}
+                                  ("table","Table"),
+                                  ("matrix","Matrix (rows + columns)")] %}
               <option value="{{ val }}" {{ "selected" if q.type==val }}>{{ lbl }}</option>
               {% endfor %}
             </select>
@@ -87,12 +88,54 @@
           <div class="table-preview"></div>
         </div>
 
+        <!-- Matrix editor (columns + row labels) -->
+        <div class="matrix-editor" {{ '' if q.type == 'matrix' else 'hidden' }}>
+          <p class="field-hint" style="margin-bottom:6px">Column headers
+            (top row):</p>
+          <div class="mcol-list">
+            {% if q.type == 'matrix' and q.columns %}
+              {% for col in q.columns %}
+              <div class="choice-item">
+                <input type="text" class="mcol-input" value="{{ col }}"
+                       placeholder="Column header" oninput="onMatrixEdit(this)">
+                <button type="button" class="icon-btn icon-btn--danger"
+                        title="Remove column"
+                        onclick="removeMatrixItem(this)">&times;</button>
+              </div>
+              {% endfor %}
+            {% endif %}
+          </div>
+          <button type="button" class="btn btn--sm secondary"
+                  onclick="addMatrixCol(this)">+ Add column</button>
+          <p class="field-hint" style="margin:14px 0 6px">Row labels
+            (left column):</p>
+          <div class="mrow-list">
+            {% if q.type == 'matrix' and q.row_labels %}
+              {% for lbl in q.row_labels %}
+              <div class="choice-item">
+                <input type="text" class="mrow-input" value="{{ lbl }}"
+                       placeholder="Row label" oninput="onMatrixEdit(this)">
+                <button type="button" class="icon-btn icon-btn--danger"
+                        title="Remove row"
+                        onclick="removeMatrixItem(this)">&times;</button>
+              </div>
+              {% endfor %}
+            {% endif %}
+          </div>
+          <button type="button" class="btn btn--sm secondary"
+                  onclick="addMatrixRow(this)">+ Add row</button>
+          <p class="field-hint" style="margin:12px 0 4px">Preview</p>
+          <div class="matrix-preview"></div>
+        </div>
+
         <!-- Hidden fields the backend reads; filled by JS on submit. One each
              per question row so getlist() stays index-aligned. -->
         <input type="hidden" name="q_options"
                value="{{ q.options|join('|') if q.options else (q.columns|join('|') if q.columns else '') }}">
         <input type="hidden" name="q_rows"
                value="{{ q.rows if q.rows else '' }}">
+        <input type="hidden" name="q_rowlabels"
+               value="{{ q.row_labels|join('|') if q.row_labels else '' }}">
 
         <div class="q-row__foot">
           <label class="inline-check">
@@ -130,6 +173,7 @@
           <option value="yesno">Yes / No</option>
           <option value="choice">Multiple choice</option>
           <option value="table">Table</option>
+          <option value="matrix">Matrix (rows + columns)</option>
         </select>
       </label>
     </div>
@@ -153,8 +197,21 @@
       <p class="field-hint" style="margin:12px 0 4px">Preview</p>
       <div class="table-preview"></div>
     </div>
+    <div class="matrix-editor" hidden>
+      <p class="field-hint" style="margin-bottom:6px">Column headers (top row):</p>
+      <div class="mcol-list"></div>
+      <button type="button" class="btn btn--sm secondary"
+              onclick="addMatrixCol(this)">+ Add column</button>
+      <p class="field-hint" style="margin:14px 0 6px">Row labels (left column):</p>
+      <div class="mrow-list"></div>
+      <button type="button" class="btn btn--sm secondary"
+              onclick="addMatrixRow(this)">+ Add row</button>
+      <p class="field-hint" style="margin:12px 0 4px">Preview</p>
+      <div class="matrix-preview"></div>
+    </div>
     <input type="hidden" name="q_options" value="">
     <input type="hidden" name="q_rows" value="">
+    <input type="hidden" name="q_rowlabels" value="">
     <div class="q-row__foot">
       <label class="inline-check">
         <input type="checkbox" onchange="syncReq(this)">
@@ -183,6 +240,24 @@
   </div>
 </template>
 
+<template id="mcolTemplate">
+  <div class="choice-item">
+    <input type="text" class="mcol-input" placeholder="Column header"
+           oninput="onMatrixEdit(this)">
+    <button type="button" class="icon-btn icon-btn--danger"
+            title="Remove column" onclick="removeMatrixItem(this)">&times;</button>
+  </div>
+</template>
+
+<template id="mrowTemplate">
+  <div class="choice-item">
+    <input type="text" class="mrow-input" placeholder="Row label"
+           oninput="onMatrixEdit(this)">
+    <button type="button" class="icon-btn icon-btn--danger"
+            title="Remove row" onclick="removeMatrixItem(this)">&times;</button>
+  </div>
+</template>
+
 <script>
 function addQuestion() {
   const tpl = document.getElementById('qTemplate');
@@ -197,8 +272,10 @@ function onTypeChange(sel) {
   const row = sel.closest('.q-row');
   const choiceEd = row.querySelector('.choice-editor');
   const tableEd = row.querySelector('.table-editor');
+  const matrixEd = row.querySelector('.matrix-editor');
   choiceEd.hidden = sel.value !== 'choice';
   tableEd.hidden = sel.value !== 'table';
+  matrixEd.hidden = sel.value !== 'matrix';
   if (sel.value === 'choice' && !choiceEd.querySelector('.choice-item')) {
     addChoice(choiceEd.querySelector('button'));
     addChoice(choiceEd.querySelector('button'));
@@ -208,6 +285,15 @@ function onTypeChange(sel) {
     addColumn(tableEd.querySelector('button'));
   }
   if (sel.value === 'table') renderTablePreview(tableEd);
+  if (sel.value === 'matrix') {
+    if (!matrixEd.querySelector('.mcol-input')) {
+      addMatrixCol(matrixEd); addMatrixCol(matrixEd);
+    }
+    if (!matrixEd.querySelector('.mrow-input')) {
+      addMatrixRow(matrixEd); addMatrixRow(matrixEd);
+    }
+    renderMatrixPreview(matrixEd);
+  }
 }
 function addChoice(btn) {
   const tpl = document.getElementById('choiceTemplate');
@@ -263,6 +349,60 @@ function renderTablePreview(editor) {
   preview.innerHTML = html;
   preview.firstElementChild.setAttribute('dir', rtl ? 'rtl' : 'ltr');
 }
+
+// ---- Matrix editor (columns + row labels) ----
+function _matrixEd(elOrEd) {
+  return elOrEd.classList && elOrEd.classList.contains('matrix-editor')
+    ? elOrEd : elOrEd.closest('.matrix-editor');
+}
+function addMatrixCol(elOrEd) {
+  const ed = _matrixEd(elOrEd);
+  const tpl = document.getElementById('mcolTemplate');
+  ed.querySelector('.mcol-list').appendChild(tpl.content.cloneNode(true));
+  renderMatrixPreview(ed);
+}
+function addMatrixRow(elOrEd) {
+  const ed = _matrixEd(elOrEd);
+  const tpl = document.getElementById('mrowTemplate');
+  ed.querySelector('.mrow-list').appendChild(tpl.content.cloneNode(true));
+  renderMatrixPreview(ed);
+}
+function removeMatrixItem(btn) {
+  const ed = _matrixEd(btn);
+  btn.closest('.choice-item').remove();
+  renderMatrixPreview(ed);
+}
+function onMatrixEdit(el) {
+  renderMatrixPreview(_matrixEd(el));
+}
+function renderMatrixPreview(ed) {
+  const preview = ed.querySelector('.matrix-preview');
+  if (!preview) return;
+  const cols = [...ed.querySelectorAll('.mcol-input')].map(i => i.value.trim());
+  const labels = [...ed.querySelectorAll('.mrow-input')].map(i => i.value.trim());
+  if (!cols.some(c => c.length) || !labels.some(l => l.length)) {
+    preview.innerHTML =
+      '<p class="field-hint">Add a column and a row to see the preview.</p>';
+    return;
+  }
+  const rtl = /[\u0590-\u05FF\u0600-\u06FF]/.test((cols.join(' ') + ' ' +
+    labels.join(' ')));
+  const order = rtl ? [...cols.keys()].reverse() : [...cols.keys()];
+  let html = '<div class="table-wrap"><table class="answer-grid"><thead><tr>';
+  html += '<th></th>';
+  for (const i of order) html += '<th>' + escapeHtml(cols[i] || '-') + '</th>';
+  html += '</tr></thead><tbody>';
+  for (const lbl of labels) {
+    html += '<tr><th scope="row">' + escapeHtml(lbl || '-') + '</th>';
+    for (let i = 0; i < cols.length; i++) {
+      html += '<td><input type="text" disabled></td>';
+    }
+    html += '</tr>';
+  }
+  html += '</tbody></table></div>';
+  preview.innerHTML = html;
+  preview.firstElementChild.setAttribute('dir', rtl ? 'rtl' : 'ltr');
+}
 function escapeHtml(s) {
   const d = document.createElement('div');
   d.textContent = s;
@@ -275,8 +415,10 @@ function prepareSubmit() {
     const type = row.querySelector('select[name=q_type]').value;
     const opts = row.querySelector('input[name=q_options]');
     const rowsField = row.querySelector('input[name=q_rows]');
+    const rowLabelsField = row.querySelector('input[name=q_rowlabels]');
     opts.value = '';
     rowsField.value = '';
+    rowLabelsField.value = '';
     if (type === 'choice') {
       const vals = [...row.querySelectorAll('.choice-input')]
         .map(i => i.value.trim()).filter(v => v.length);
@@ -303,16 +445,34 @@ function prepareSubmit() {
       const nrows = parseInt(row.querySelector('.rows-input').value, 10) || 1;
       opts.value = cols.join('|');
       rowsField.value = String(Math.max(1, Math.min(nrows, 50)));
+    } else if (type === 'matrix') {
+      const cols = [...row.querySelectorAll('.mcol-input')]
+        .map(i => i.value.trim()).filter(v => v.length);
+      const labels = [...row.querySelectorAll('.mrow-input')]
+        .map(i => i.value.trim()).filter(v => v.length);
+      if (cols.length < 1 || labels.length < 1) {
+        alert('Matrix questions need at least one column and one row.');
+        return false;
+      }
+      if (cols.concat(labels).some(v => v.includes('|'))) {
+        alert('Column headers and row labels cannot contain the "|" character.');
+        return false;
+      }
+      opts.value = cols.join('|');
+      rowLabelsField.value = labels.join('|');
     }
   }
   return true;
 }
-// Render previews for any table questions already present (edit mode).
+// Render previews for any table/matrix questions already present (edit mode).
 document.addEventListener('DOMContentLoaded', function () {
   document.querySelectorAll('.q-row').forEach(function (row) {
     const sel = row.querySelector('select[name=q_type]');
-    if (sel && sel.value === 'table') {
+    if (!sel) return;
+    if (sel.value === 'table') {
       renderTablePreview(row.querySelector('.table-editor'));
+    } else if (sel.value === 'matrix') {
+      renderMatrixPreview(row.querySelector('.matrix-editor'));
     }
   });
 });

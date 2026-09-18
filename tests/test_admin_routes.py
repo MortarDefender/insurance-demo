@@ -256,6 +256,62 @@ def test_table_answer_in_email_and_pdf(logged_in_client, settings):
     assert PdfReader(BytesIO(pdf.get_payload(decode=True))).pages
 
 
+def test_matrix_saves_columns_and_row_labels(logged_in_client):
+    c, app = logged_in_client
+    c.post("/admin/questionnaires/new", data={
+        "name": "Finance", "q_prompt": ["Income by year"],
+        "q_type": ["matrix"], "q_required_flag": ["1"],
+        "q_options": ["2021|2022|2023"], "q_rowlabels": ["Income|Expenses"],
+    }, follow_redirects=True)
+    q = [x for x in app.config["STORE"].list_questionnaires()
+         if x["name"] == "Finance"][0]
+    mq = q["questions"][0]
+    assert mq["type"] == "matrix"
+    assert mq["columns"] == ["2021", "2022", "2023"]
+    assert mq["row_labels"] == ["Income", "Expenses"]
+
+
+def test_matrix_missing_rows_or_columns_falls_back_to_text(logged_in_client):
+    c, app = logged_in_client
+    c.post("/admin/questionnaires/new", data={
+        "name": "M1", "q_prompt": ["X"], "q_type": ["matrix"],
+        "q_required_flag": ["0"], "q_options": ["A|B"], "q_rowlabels": [""],
+    }, follow_redirects=True)
+    q = [x for x in app.config["STORE"].list_questionnaires()
+         if x["name"] == "M1"][0]
+    assert q["questions"][0]["type"] == "text"
+
+
+def test_matrix_guest_render_and_submit(logged_in_client, settings):
+    import email
+    import glob
+    import os
+    from links import make_link_token
+    c, app = logged_in_client
+    qid = app.config["STORE"].create_questionnaire(name="Fin", questions=[
+        {"prompt": "By year", "type": "matrix", "required": True,
+         "columns": ["2021", "2022"], "row_labels": ["Income", "Expenses"]}])
+    token = make_link_token(settings.SECRET_KEY, kind="questionnaire",
+                            template_id=qid, first_name="Jane", last_name="Doe",
+                            expiry_days=7)
+    html = c.get(f"/c/{token}").get_data(as_text=True)
+    assert "2021" in html and "Income" in html and "Expenses" in html
+    assert html.count('name="answer_0_r') == 4  # 2 rows x 2 cols
+    partial = c.post(f"/c/{token}", data={"answer_0_r0_c0": "100"})
+    assert "required" in partial.get_data(as_text=True).lower()
+    full = c.post(f"/c/{token}", data={
+        "answer_0_r0_c0": "100", "answer_0_r0_c1": "120",
+        "answer_0_r1_c0": "80", "answer_0_r1_c1": "90"})
+    assert full.status_code == 200
+    eml = sorted(glob.glob(os.path.join(settings.OUTBOX_DIR, "*.eml")))[-1]
+    msg = email.message_from_bytes(open(eml, "rb").read())
+    body = [p for p in msg.walk()
+            if p.get_content_type() == "text/plain"][0]
+    text = body.get_payload(decode=True).decode("utf-8")
+    assert "Income | 100 | 120" in text
+    assert "Expenses | 80 | 90" in text
+
+
 def test_delete_questionnaire(logged_in_client):
     c, app = logged_in_client
     qid = app.config["STORE"].create_questionnaire(name="X", questions=[])
