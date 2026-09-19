@@ -1,6 +1,15 @@
 # Render Blueprint. In the Render dashboard: New +  ->  Blueprint, point it at
 # this repo, then fill in the secret values marked sync:false.
 # Docs: https://render.com/docs/blueprint-spec
+#
+# FREE-PLAN NOTE: the free plan has no persistent disk, so questionnaire and
+# document templates the admin creates are stored on the instance's ephemeral
+# filesystem and RESET on every redeploy or restart (and the service sleeps
+# after ~15 min of inactivity, with a slow first request afterwards). That is
+# fine for a demo: just recreate the templates after a redeploy. To make
+# templates durable, upgrade to a paid plan with a disk (add a `disk:` block and
+# point STORE_DIR/OUTBOX_DIR/UPLOADS_TMP_DIR at the mount) or move storage to a
+# database.
 services:
   - type: web
     name: client-portal
@@ -10,22 +19,7 @@ services:
     startCommand: gunicorn wsgi:app --bind 0.0.0.0:$PORT --workers 2 --timeout 60
     healthCheckPath: /
     autoDeploy: true
-    # A persistent disk keeps templates_store across restarts and deploys.
-    # NOTE: Render's free plan does NOT include persistent disks. If you stay on
-    # free, remove this disk block and expect templates to reset on redeploy,
-    # or move template storage to a database. On a paid plan, keep it.
-    disk:
-      name: data
-      mountPath: /var/data
-      sizeGB: 1
     envVars:
-      # Storage lives on the mounted disk so it persists.
-      - key: STORE_DIR
-        value: /var/data/templates_store
-      - key: OUTBOX_DIR
-        value: /var/data/outbox
-      - key: UPLOADS_TMP_DIR
-        value: /var/data/uploads_tmp
       # Production hardening.
       - key: FLASK_DEBUG
         value: "0"

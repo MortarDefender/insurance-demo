@@ -11,6 +11,27 @@ def _settings_from_config():
         pass
     s = S()
 
+    # Baseline defaults so the app runs even with no config.py and no env vars
+    # set (e.g. a fresh cloud host). config.py and env vars override these.
+    _DEFAULTS = {
+        "SECRET_KEY": "dev-insecure-change-me",
+        "ADMIN_PASSWORD": "",
+        "ADMIN_PASSWORD_HASH": "",
+        "ADMIN_EMAIL": "admin@example.com",
+        "LINK_EXPIRY_DAYS": 7,
+        "PORT": 9900,
+        "MAIL_MODE": "outbox",
+        "SMTP_HOST": "",
+        "SMTP_PORT": 587,
+        "SMTP_USERNAME": "",
+        "SMTP_PASSWORD": "",
+        "SMTP_USE_TLS": True,
+        "MAX_UPLOAD_MB": 15,
+        "ALLOWED_UPLOAD_EXTENSIONS": ["pdf", "doc", "docx"],
+    }
+    for key, val in _DEFAULTS.items():
+        setattr(s, key, val)
+
     # Base defaults from config.py when present. On a fresh cloud host there may
     # be no config.py at all; that's fine, every value can come from the
     # environment instead.
