@@ -507,6 +507,7 @@ def register_guest_routes(app):
                                 body="\n".join(body_lines),
                                 attachments=[(pdf_filename, pdf_bytes)])
                 except Exception:
+                    app.logger.exception("Failed to send questionnaire email")
                     return render_template(
                         "guest_questionnaire.html", q=q, first=first,
                         dir=q_dir, greeting=greeting, tr=tr,
@@ -551,6 +552,7 @@ def register_guest_routes(app):
                             body=f"Signed document from {first} {last} attached.",
                             attachments=[(file.filename, file_bytes)])
             except Exception:
+                app.logger.exception("Failed to send signed-document email")
                 return render_template(
                     "guest_document.html", doc=doc, first=first, token=token,
                     dir=d_dir, greeting=greeting, tr=tr,
