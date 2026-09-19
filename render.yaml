@@ -32,18 +32,14 @@ services:
         sync: false                  # paste output of gen_password_hash.py
       - key: ADMIN_EMAIL
         sync: false
+      # Email: Resend HTTP API (works on hosts that block SMTP, like Render
+      # free). Create a free key at https://resend.com and set RESEND_API_KEY.
       - key: MAIL_MODE
-        value: smtp
-      - key: SMTP_HOST
-        value: smtp.gmail.com
-      - key: SMTP_PORT
-        value: "587"
-      - key: SMTP_USE_TLS
-        value: "1"
-      - key: SMTP_USERNAME
-        sync: false
-      - key: SMTP_PASSWORD
-        sync: false                  # Gmail 16-char app password
+        value: resend
+      - key: RESEND_API_KEY
+        sync: false                  # Resend API key (re_...)
+      - key: MAIL_FROM
+        sync: false                  # verified sender, e.g. onboarding@resend.dev
       - key: LINK_EXPIRY_DAYS
         value: "7"
       # Optional landing-page branding.

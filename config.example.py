@@ -25,7 +25,10 @@ LINK_EXPIRY_DAYS = 7
 PORT = 9900
 
 # "outbox" writes emails to ./outbox for local testing.
-# "smtp" sends real email using the SMTP_* settings below.
+# "smtp"   sends via SMTP (e.g. Gmail). Works locally; blocked on many PaaS
+#          free tiers (Render) which do not allow outbound SMTP.
+# "resend" sends via the Resend HTTP API (https://resend.com) over HTTPS, which
+#          works on hosts that block SMTP. Recommended for cloud deploys.
 MAIL_MODE = "outbox"
 
 # Only used when MAIL_MODE == "smtp".
@@ -34,6 +37,12 @@ SMTP_PORT = 587
 SMTP_USERNAME = ""
 SMTP_PASSWORD = ""
 SMTP_USE_TLS = True
+
+# Only used when MAIL_MODE == "resend". Get a free key at https://resend.com.
+RESEND_API_KEY = ""
+# The verified sender address. For a quick demo Resend provides
+# "onboarding@resend.dev"; for production verify your own domain.
+MAIL_FROM = ""
 
 # Upload limits for signed documents.
 MAX_UPLOAD_MB = 15

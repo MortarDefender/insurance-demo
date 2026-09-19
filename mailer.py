@@ -1,9 +1,21 @@
-"""Send results to the admin. Outbox mode (local) writes .eml files to disk;
-smtp mode sends real email. Switching is a config change only."""
+"""Send results to the admin.
 
+Three modes, selected by settings.MAIL_MODE:
+  - "outbox": write .eml files to disk (local testing, no network).
+  - "smtp":   send via SMTP (e.g. Gmail). Works locally, but many PaaS free
+              tiers (Render) block outbound SMTP ports.
+  - "resend": send via the Resend HTTP API over HTTPS (port 443). Works on hosts
+              that block SMTP. Needs RESEND_API_KEY and MAIL_FROM.
+Switching is a config change only.
+"""
+
+import base64
+import json
 import os
 import smtplib
 import time
+import urllib.error
+import urllib.request
 import uuid
 from email.message import EmailMessage
 
@@ -34,12 +46,16 @@ def _guess_mime(filename):
 
 def send(settings, *, subject, body, attachments):
     """attachments: list of (filename, bytes)."""
-    msg = _build_message(settings, subject, body, attachments)
     mode = getattr(settings, "MAIL_MODE", "outbox")
-    if mode == "smtp":
-        _send_smtp(settings, msg)
+    if mode == "resend":
+        _send_resend(settings, subject=subject, body=body,
+                     attachments=attachments)
+    elif mode == "smtp":
+        _send_smtp(settings, _build_message(settings, subject, body,
+                                            attachments))
     else:
-        _send_outbox(settings, msg)
+        _send_outbox(settings, _build_message(settings, subject, body,
+                                              attachments))
 
 
 def _send_outbox(settings, msg):
@@ -68,3 +84,47 @@ def _send_smtp(settings, msg):
             server.quit()
         except Exception:
             pass
+
+
+# Overridable for tests: does the actual HTTP POST and returns the status code.
+def _http_post_json(url, headers, payload, timeout):
+    data = json.dumps(payload).encode("utf-8")
+    req = urllib.request.Request(url, data=data, headers=headers, method="POST")
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        return resp.status, resp.read()
+
+
+def _send_resend(settings, *, subject, body, attachments):
+    """Send via the Resend HTTP API (https://resend.com). Uses HTTPS (443), so
+    it works on hosts that block SMTP. Requires RESEND_API_KEY and MAIL_FROM."""
+    api_key = getattr(settings, "RESEND_API_KEY", "")
+    mail_from = getattr(settings, "MAIL_FROM", "") or settings.ADMIN_EMAIL
+    if not api_key:
+        raise RuntimeError("RESEND_API_KEY is not set")
+
+    payload = {
+        "from": mail_from,
+        "to": [settings.ADMIN_EMAIL],
+        "subject": subject,
+        "text": body,
+        "attachments": [
+            {"filename": filename,
+             "content": base64.b64encode(data).decode("ascii")}
+            for filename, data in attachments
+        ],
+    }
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+    }
+    timeout = getattr(settings, "MAIL_TIMEOUT", 15)
+    try:
+        status, raw = _http_post_json("https://api.resend.com/emails",
+                                      headers, payload, timeout)
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode("utf-8", "replace")[:300]
+        raise RuntimeError(f"Resend API error {exc.code}: {detail}") from exc
+    except urllib.error.URLError as exc:
+        raise RuntimeError(f"Resend request failed: {exc.reason}") from exc
+    if status >= 300:
+        raise RuntimeError(f"Resend API returned status {status}")

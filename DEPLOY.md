@@ -60,8 +60,10 @@ git push -u origin main
 | `SECRET_KEY` | yes | Long random string. On Blueprint, `generateValue` does this. |
 | `ADMIN_PASSWORD_HASH` | yes | Output of `gen_password_hash.py`. |
 | `ADMIN_EMAIL` | yes | Where completed results are emailed. |
-| `MAIL_MODE` | yes | `smtp` for real email (or `outbox` to disable sending). |
-| `SMTP_HOST` | for smtp | `smtp.gmail.com` |
+| `MAIL_MODE` | yes | `resend` (recommended for cloud), `smtp`, or `outbox`. |
+| `RESEND_API_KEY` | for resend | Free key from https://resend.com (`re_...`). |
+| `MAIL_FROM` | for resend | Verified sender. Demo: `onboarding@resend.dev`. |
+| `SMTP_HOST` | for smtp | `smtp.gmail.com` (SMTP is blocked on Render free). |
 | `SMTP_PORT` | for smtp | `587` |
 | `SMTP_USE_TLS` | for smtp | `1` |
 | `SMTP_USERNAME` | for smtp | Full Gmail address. |
@@ -74,6 +76,15 @@ git push -u origin main
 
 Environment variables always win over `config.py`, so the same code runs both
 locally and in the cloud.
+
+### Email on Render (important)
+Render's free tier **blocks outbound SMTP**, so Gmail/SMTP will hang and fail
+there. Use **`MAIL_MODE=resend`** (the Resend HTTP API works over HTTPS):
+1. Sign up free at <https://resend.com> and create an API key.
+2. Set `RESEND_API_KEY` and `MAIL_FROM`. For a quick demo you can send from
+   `onboarding@resend.dev`; for production, verify your own domain in Resend and
+   use an address on it.
+3. Free Resend tier is ~3,000 emails/month, plenty for a demo.
 
 ---
 

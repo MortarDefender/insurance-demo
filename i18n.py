@@ -34,6 +34,7 @@ _STRINGS = {
         "greeting": "Hello",
         "sent_securely": "Sent securely",
         "not_stored": "Not stored on this site",
+        "sending": "Sending your response, please wait...",
         "send_failed": ("Sorry, we could not send your response just now. "
                         "Please try again in a moment."),
         "thank_you_title": "Thank you",
@@ -214,6 +215,7 @@ _STRINGS = {
         "greeting": "שלום",
         "sent_securely": "נשלח באופן מאובטח",
         "not_stored": "לא נשמר באתר זה",
+        "sending": "שולח את תשובתכם, אנא המתינו...",
         "send_failed": ("מצטערים, לא הצלחנו לשלוח את תשובתכם כרגע. "
                         "אנא נסו שוב בעוד רגע."),
         "thank_you_title": "תודה",

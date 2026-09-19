@@ -26,6 +26,10 @@ def _settings_from_config():
         "SMTP_USERNAME": "",
         "SMTP_PASSWORD": "",
         "SMTP_USE_TLS": True,
+        "SMTP_TIMEOUT": 15,
+        "RESEND_API_KEY": "",
+        "MAIL_FROM": "",
+        "MAIL_TIMEOUT": 15,
         "MAX_UPLOAD_MB": 15,
         "ALLOWED_UPLOAD_EXTENSIONS": ["pdf", "doc", "docx"],
     }
@@ -69,6 +73,7 @@ def _apply_env_overrides(s):
     str_keys = [
         "SECRET_KEY", "ADMIN_PASSWORD", "ADMIN_PASSWORD_HASH", "ADMIN_EMAIL",
         "MAIL_MODE", "SMTP_HOST", "SMTP_USERNAME", "SMTP_PASSWORD",
+        "RESEND_API_KEY", "MAIL_FROM",
         "COMPANY_NAME", "COMPANY_TAGLINE", "CONTACT_EMAIL", "CONTACT_PHONE",
         "CONTACT_ADDRESS",
     ]

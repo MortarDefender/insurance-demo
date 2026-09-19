@@ -12,7 +12,7 @@
   <div class="card">
     <p class="help" style="margin-top:0">{{ tr.q_intro }}</p>
     {% if error %}<div class="alert alert--error">{{ error }}</div>{% endif %}
-    <form method="post">
+    <form method="post" class="js-submit-form">
       {% for question in q.questions %}
       <div style="padding:14px 0; border-bottom:1px solid var(--line)">
         <label style="margin-top:0">{{ loop.index }}. {{ question.prompt }}
@@ -81,7 +81,8 @@
         {% endif %}
       </div>
       {% endfor %}
-      <button type="submit" class="btn btn--lg" style="margin-top:22px">
+      <button type="submit" class="btn btn--lg js-submit-btn"
+              data-label="{{ tr.q_submit }}" style="margin-top:22px">
         {{ tr.q_submit }}</button>
     </form>
   </div>
@@ -91,4 +92,31 @@
     <span><span class="tick">&#10003;</span> {{ tr.not_stored }}</span>
   </div>
 </div>
+
+<div class="submit-overlay" id="submitOverlay">
+  <div class="submit-overlay__card">
+    <div class="submit-overlay__spin"></div>
+    <p class="help" style="margin:0">{{ tr.sending }}</p>
+  </div>
+</div>
+
+<script>
+(function () {
+  var form = document.querySelector('.js-submit-form');
+  if (!form) return;
+  form.addEventListener('submit', function () {
+    // Native validation (required fields) runs before this fires, so we only
+    // reach here on a valid submit.
+    var btn = form.querySelector('.js-submit-btn');
+    if (btn) {
+      btn.disabled = true;
+      btn.classList.add('is-loading');
+      btn.innerHTML = '<span class="spinner"></span>' +
+        (btn.getAttribute('data-label') || '');
+    }
+    var ov = document.getElementById('submitOverlay');
+    if (ov) ov.classList.add('open');
+  });
+})();
+</script>
 {% endblock %}
