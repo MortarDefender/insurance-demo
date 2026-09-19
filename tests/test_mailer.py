@@ -30,9 +30,10 @@ class _FakeSMTP:
     """Records the sequence of smtplib calls for assertion."""
     instances = []
 
-    def __init__(self, host, port):
+    def __init__(self, host, port, timeout=None):
         self.host = host
         self.port = port
+        self.timeout = timeout
         self.calls = []
         self.logged_in = None
         self.sent = 0

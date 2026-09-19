@@ -50,14 +50,21 @@ def _send_outbox(settings, msg):
 
 
 def _send_smtp(settings, msg):
-    if settings.SMTP_USE_TLS:
-        server = smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT)
-        server.starttls()
-    else:
-        server = smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT)
+    # A finite timeout is essential: without it a blocked/again SMTP port (e.g.
+    # Render's free tier blocks outbound SMTP) hangs the request until the WSGI
+    # worker is force-killed. With a timeout the connection fails fast and the
+    # caller can show a friendly error instead of crashing.
+    timeout = getattr(settings, "SMTP_TIMEOUT", 15)
+    server = smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT,
+                          timeout=timeout)
     try:
+        if settings.SMTP_USE_TLS:
+            server.starttls()
         if settings.SMTP_USERNAME:
             server.login(settings.SMTP_USERNAME, settings.SMTP_PASSWORD)
         server.send_message(msg)
     finally:
-        server.quit()
+        try:
+            server.quit()
+        except Exception:
+            pass
