@@ -161,7 +161,11 @@ def create_app(settings=None):
                                "100 Market Street, Suite 500, "
                                "San Francisco, CA"),
         }
-        return render_template("home.html", company=company)
+        # The public site follows the same language toggle as the admin.
+        lang = _admin_lang()
+        return render_template("home.html", company=company,
+                               dir="rtl" if lang == "he" else "ltr",
+                               show_lang_toggle=True)
 
     @app.route("/admin")
     @login_required

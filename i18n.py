@@ -128,6 +128,69 @@ _STRINGS = {
         "t_choice": "Multiple choice",
         "t_table": "Table",
         "t_matrix": "Matrix (rows + columns)",
+        # --- public landing page ---
+        "h_about": "About",
+        "h_services": "Services",
+        "h_contact": "Contact",
+        "h_admin": "Admin",
+        "h_hero_eyebrow": "Life & Health Insurance",
+        "h_hero_title": "Protection that puts your family first.",
+        "h_hero_lead": ("{name} helps you choose the right cover with clear "
+                        "advice, fair pricing, and a claims process built "
+                        "around real people, not paperwork."),
+        "h_cta_advisor": "Talk to an advisor",
+        "h_cta_cover": "Explore cover",
+        "h_trust_licensed": "Licensed & regulated",
+        "h_trust_independent": "Independent advice",
+        "h_trust_claims": "Fast, human claims",
+        "h_stat_years": "years protecting families",
+        "h_stat_claims": "claims paid on first review",
+        "h_stat_response": "typical advisor response",
+        "h_about_eyebrow": "About us",
+        "h_about_title": "A steady partner for life's big decisions",
+        "h_about_p1": ("{name} {tagline} is an independent insurance practice. "
+                       "We are not tied to a single insurer, so our only job is "
+                       "to find the cover that genuinely fits your circumstances "
+                       "and budget."),
+        "h_about_p2": ("From your first quote to a claim years down the line, "
+                       "you work with advisors who know your policy and answer "
+                       "the phone. We keep the process simple, transparent, and "
+                       "private."),
+        "h_services_eyebrow": "What we offer",
+        "h_services_title": "Cover for every stage",
+        "h_svc_life": "Life insurance",
+        "h_svc_life_desc": ("Term and whole-of-life policies that keep your "
+                            "family secure if the unexpected happens."),
+        "h_svc_health": "Health & critical illness",
+        "h_svc_health_desc": ("Cover that helps with treatment costs and income "
+                              "if you become seriously ill."),
+        "h_svc_income": "Income protection",
+        "h_svc_income_desc": ("A monthly benefit that replaces part of your "
+                              "income when you cannot work."),
+        "h_why_eyebrow": "Why {name}",
+        "h_why_title": "Advice you can trust",
+        "h_why_independent": "Independent",
+        "h_why_independent_desc": ("We compare the whole market and recommend "
+                                   "what is right for you, not for us."),
+        "h_why_transparent": "Transparent",
+        "h_why_transparent_desc": ("Clear pricing and plain-language policies. "
+                                   "No hidden clauses or surprise exclusions."),
+        "h_why_private": "Private",
+        "h_why_private_desc": ("Your information is handled with care and shared "
+                               "only with the insurer providing your cover."),
+        "h_contact_eyebrow": "Contact",
+        "h_contact_title": "Speak with an advisor",
+        "h_email": "Email",
+        "h_phone": "Phone",
+        "h_office": "Office",
+        "h_callback_title": "Request a call back",
+        "h_callback_desc": ("Send us a note and an advisor will get in touch. "
+                            "This opens your email app; no data is stored on "
+                            "this site."),
+        "h_email_us": "Email us now",
+        "h_footer_tag": "Licensed insurance advisers.",
+        "h_footer_demo": ("This site is a demo portal. Cover and figures shown "
+                          "are illustrative."),
     },
     "he": {
         "lang": "he",
@@ -239,6 +302,66 @@ _STRINGS = {
         "t_choice": "בחירה מרובה",
         "t_table": "טבלה",
         "t_matrix": "מטריצה (שורות + עמודות)",
+        # --- public landing page ---
+        "h_about": "אודות",
+        "h_services": "שירותים",
+        "h_contact": "צור קשר",
+        "h_admin": "ניהול",
+        "h_hero_eyebrow": "ביטוח חיים ובריאות",
+        "h_hero_title": "הגנה ששמה את המשפחה שלכם במקום הראשון.",
+        "h_hero_lead": ("{name} עוזרת לכם לבחור את הכיסוי הנכון עם ייעוץ ברור, "
+                        "תמחור הוגן ותהליך תביעות שנבנה סביב אנשים אמיתיים, "
+                        "לא ניירת."),
+        "h_cta_advisor": "שיחה עם יועץ",
+        "h_cta_cover": "גילוי הכיסויים",
+        "h_trust_licensed": "מורשה ומפוקח",
+        "h_trust_independent": "ייעוץ עצמאי",
+        "h_trust_claims": "תביעות מהירות ואנושיות",
+        "h_stat_years": "שנות הגנה על משפחות",
+        "h_stat_claims": "תביעות ששולמו בבדיקה ראשונה",
+        "h_stat_response": "זמן מענה טיפוסי של יועץ",
+        "h_about_eyebrow": "אודותינו",
+        "h_about_title": "שותף יציב להחלטות הגדולות בחיים",
+        "h_about_p1": ("{name} {tagline} היא סוכנות ביטוח עצמאית. איננו קשורים "
+                       "למבטח יחיד, ולכן תפקידנו היחיד הוא למצוא את הכיסוי "
+                       "שמתאים באמת לנסיבות ולתקציב שלכם."),
+        "h_about_p2": ("מהצעת המחיר הראשונה ועד תביעה שנים קדימה, אתם עובדים "
+                       "עם יועצים שמכירים את הפוליסה שלכם ועונים לטלפון. אנו "
+                       "שומרים על תהליך פשוט, שקוף ופרטי."),
+        "h_services_eyebrow": "מה אנחנו מציעים",
+        "h_services_title": "כיסוי לכל שלב",
+        "h_svc_life": "ביטוח חיים",
+        "h_svc_life_desc": ("פוליסות לתקופה ולכל החיים ששומרות על ביטחון "
+                            "המשפחה אם קורה הבלתי צפוי."),
+        "h_svc_health": "בריאות ומחלות קשות",
+        "h_svc_health_desc": ("כיסוי שמסייע בעלויות טיפול ובהכנסה אם חליתם "
+                              "במחלה קשה."),
+        "h_svc_income": "אובדן כושר עבודה",
+        "h_svc_income_desc": ("קצבה חודשית שמחליפה חלק מההכנסה שלכם כשאינכם "
+                              "יכולים לעבוד."),
+        "h_why_eyebrow": "למה {name}",
+        "h_why_title": "ייעוץ שאפשר לסמוך עליו",
+        "h_why_independent": "עצמאי",
+        "h_why_independent_desc": ("אנו משווים את כל השוק וממליצים על מה "
+                                   "שנכון לכם, לא לנו."),
+        "h_why_transparent": "שקוף",
+        "h_why_transparent_desc": ("תמחור ברור ופוליסות בשפה פשוטה. ללא "
+                                   "סעיפים נסתרים או חריגים מפתיעים."),
+        "h_why_private": "פרטי",
+        "h_why_private_desc": ("המידע שלכם מטופל בזהירות ומשותף רק עם המבטח "
+                               "שמספק את הכיסוי שלכם."),
+        "h_contact_eyebrow": "צור קשר",
+        "h_contact_title": "דברו עם יועץ",
+        "h_email": "אימייל",
+        "h_phone": "טלפון",
+        "h_office": "משרד",
+        "h_callback_title": "בקשת שיחה חוזרת",
+        "h_callback_desc": ("שלחו לנו הודעה ויועץ יחזור אליכם. פעולה זו פותחת "
+                            "את אפליקציית המייל; לא נשמר מידע באתר זה."),
+        "h_email_us": "שלחו לנו מייל",
+        "h_footer_tag": "יועצי ביטוח מורשים.",
+        "h_footer_demo": ("אתר זה הוא פורטל הדגמה. הכיסויים והנתונים המוצגים "
+                          "הם להמחשה בלבד."),
     },
 }
 

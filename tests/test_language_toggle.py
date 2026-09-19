@@ -85,3 +85,21 @@ def test_legacy_link_without_lang_uses_content_detection(logged_in, settings):
     html = c.get(f"/c/{token}").get_data(as_text=True)
     # Falls back to detecting direction from the Hebrew content.
     assert '<html lang="he" dir="rtl">' in html
+
+
+def test_home_page_follows_language_toggle(settings):
+    app = create_app(settings)
+    app.config.update(TESTING=True)
+    c = app.test_client()  # public, no login
+    # Default English.
+    en = c.get("/").get_data(as_text=True)
+    assert '<html lang="en" dir="ltr">' in en
+    assert "Protection that puts your family first." in en
+    assert "lang-toggle" in en
+    # Toggle to Hebrew (route works without login).
+    c.get("/admin/language/he")
+    he = c.get("/").get_data(as_text=True)
+    assert '<html lang="he" dir="rtl">' in he
+    assert "הגנה ששמה את המשפחה" in he      # hero title
+    assert "דברו עם יועץ" in he             # contact title
+    assert "Protection that puts" not in he

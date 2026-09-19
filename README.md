@@ -86,10 +86,11 @@ configuration. Direction is detected from the content itself:
   thank-you and error pages) is shown in Hebrew for Hebrew content and English
   otherwise. Strings live in `i18n.py`.
 - The **admin area** has an EN / עב language toggle in the top bar. Switching to
-  Hebrew renders the whole admin in Hebrew (RTL). The chosen language is also
-  embedded in any link generated while it is active, so the client's page opens
-  in that language regardless of the template's content. Older links without an
-  embedded language fall back to detecting direction from the content.
+  Hebrew renders the whole admin in Hebrew (RTL), and the **public landing page**
+  follows the same toggle. The chosen language is also embedded in any link
+  generated while it is active, so the client's page opens in that language
+  regardless of the template's content. Older links without an embedded language
+  fall back to detecting direction from the content.
 - The emailed PDF embeds a bundled Hebrew font (`fonts/NotoSansHebrew-Regular.ttf`,
   SIL Open Font License) and reorders RTL text correctly. Mixed English/Hebrew
   content is handled per line.
