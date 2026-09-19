@@ -116,6 +116,10 @@ def _send_resend(settings, *, subject, body, attachments):
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
+        # Resend is fronted by Cloudflare, which blocks the default
+        # "Python-urllib" agent (403, code 1010). Send a normal UA.
+        "User-Agent": "client-portal/1.0",
+        "Accept": "application/json",
     }
     timeout = getattr(settings, "MAIL_TIMEOUT", 15)
     try:
