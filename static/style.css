@@ -157,6 +157,10 @@ textarea { resize: vertical; min-height: 84px; }
 /* Adaptive notes fields start at a single row and grow with content (capped in
    JS at ~5 rows). They opt out of the default textarea min-height. */
 textarea.autogrow { min-height: 0; resize: none; overflow-y: hidden; }
+/* Per-question client notes box on the guest questionnaire: lighter label and a
+   little breathing room above the answer field. */
+.q-notes-label { font-weight: 500; font-size: .82rem; color: var(--muted);
+  margin-top: 10px; }
 input:focus, select:focus, textarea:focus {
   outline: none; border-color: var(--brand); box-shadow: var(--ring);
 }

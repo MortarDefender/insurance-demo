@@ -229,8 +229,6 @@ def register_admin_routes(app):
         prompts = form.getlist("q_prompt")
         types = form.getlist("q_type")
         options = form.getlist("q_options")
-        # Optional free-text notes shown to the client under each question.
-        notes = form.getlist("q_notes")
         # Fixed row count for table questions (one entry per question row).
         table_rows = form.getlist("q_rows")
         # Row labels for matrix questions (pipe-joined, one entry per question).
@@ -251,10 +249,7 @@ def register_admin_routes(app):
             opts_raw = options[i] if i < len(options) else ""
             opts = [o.strip() for o in opts_raw.split("|") if o.strip()]
             is_required = (req_flags[i] == "1") if i < len(req_flags) else False
-            note = notes[i].strip() if i < len(notes) else ""
             q = {"prompt": prompt, "type": qtype, "required": is_required}
-            if note:
-                q["notes"] = note
             if qtype == "choice":
                 # A choice needs real options. If none were provided (e.g. the
                 # client-side editor was bypassed), fall back to free text so the
@@ -483,8 +478,11 @@ def register_guest_routes(app):
                     dir=q_dir, tr=tr), 404
             greeting = tr["greeting"]
             if request.method == "POST":
-                answers, missing = [], False
+                answers, notes, missing = [], [], False
                 for i, question in enumerate(q["questions"]):
+                    # Optional free-text note the client can add per question.
+                    q_note = request.form.get(f"answer_{i}_notes", "").strip()
+                    notes.append(q_note)
                     if question.get("type") == "table":
                         cols = question.get("columns", [])
                         nrows = int(question.get("rows", 1))
@@ -534,7 +532,7 @@ def register_guest_routes(app):
                         dir=q_dir, greeting=greeting, tr=tr,
                         error=tr["q_required"])
                 body_lines = [f"Client: {first} {last}", ""]
-                for prompt, val in answers:
+                for idx, (prompt, val) in enumerate(answers):
                     body_lines.append(f"Q: {prompt}")
                     if isinstance(val, dict):
                         cols = val.get("columns", [])
@@ -554,11 +552,16 @@ def register_guest_routes(app):
                                 body_lines.append("   " + " | ".join(cells))
                     else:
                         body_lines.append(f"A: {val or '(no answer)'}")
+                    note = notes[idx] if idx < len(notes) else ""
+                    if note:
+                        # Keep multi-line notes readable and indented.
+                        body_lines.append("Notes: " +
+                                          note.replace("\n", "\n       "))
                     body_lines.append("")
                 import pdf_report
                 pdf_bytes = pdf_report.build_questionnaire_pdf(
                     title=q["name"], first_name=first, last_name=last,
-                    answers=answers, password=client_id)
+                    answers=answers, notes=notes, password=client_id)
                 safe_name = "".join(ch for ch in f"{q['name']} - {first} {last}"
                                     if ch.isalnum() or ch in " -_").strip()
                 pdf_filename = f"{safe_name or 'questionnaire'}.pdf"

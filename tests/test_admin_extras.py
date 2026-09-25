@@ -14,45 +14,15 @@ def logged_in(settings):
     return c, app
 
 
-def test_notes_are_saved_on_questions(logged_in):
-    c, app = logged_in
-    resp = c.post("/admin/questionnaires/new", data={
-        "name": "Health",
-        "q_prompt": "Age",
-        "q_type": "number",
-        "q_notes": "Please enter your age in years.",
-        "q_required_flag": "0",
-        "q_options": "",
-        "q_rows": "",
-        "q_rowlabels": "",
-    }, follow_redirects=True)
-    assert resp.status_code == 200
-    q = app.config["STORE"].list_questionnaires()[0]
-    assert q["questions"][0]["notes"] == "Please enter your age in years."
-
-
-def test_blank_notes_are_omitted(logged_in):
-    c, app = logged_in
-    c.post("/admin/questionnaires/new", data={
-        "name": "Health", "q_prompt": "Age", "q_type": "number",
-        "q_notes": "   ", "q_required_flag": "0",
-        "q_options": "", "q_rows": "", "q_rowlabels": "",
-    }, follow_redirects=True)
-    q = app.config["STORE"].list_questionnaires()[0]
-    assert "notes" not in q["questions"][0]
-
-
 def test_questionnaire_preview_renders_and_disables_submit(logged_in):
     c, app = logged_in
     qid = app.config["STORE"].create_questionnaire(
         name="Health",
-        questions=[{"prompt": "Age", "type": "number", "required": True,
-                    "notes": "In years"}])
+        questions=[{"prompt": "Age", "type": "number", "required": True}])
     resp = c.get(f"/admin/questionnaires/{qid}/preview")
     assert resp.status_code == 200
     body = resp.get_data(as_text=True)
     assert "Age" in body
-    assert "In years" in body
     # Preview submit button must be disabled so no email is ever sent.
     assert "disabled" in body
 

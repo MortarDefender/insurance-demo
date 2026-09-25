@@ -40,13 +40,6 @@
           </label>
         </div>
 
-        <label>{{ atr.a_notes }}
-          <textarea name="q_notes" rows="1" dir="{{ admin_dir | default('ltr') }}" class="autogrow"
-                    oninput="autoGrow(this)"
-                    placeholder="">{{ q.notes or '' }}</textarea>
-          <span class="field-hint">{{ atr.a_notes_hint }}</span>
-        </label>
-
         <!-- Multiple-choice editor -->
         <div class="choice-editor" {{ '' if q.type == 'choice' else 'hidden' }}>
           <p class="field-hint" style="margin-bottom:6px">{{ atr.a_choices_intro }}</p>
@@ -181,11 +174,6 @@
         </select>
       </label>
     </div>
-    <label>{{ atr.a_notes }}
-      <textarea name="q_notes" rows="1" dir="{{ admin_dir | default('ltr') }}" class="autogrow"
-                oninput="autoGrow(this)"></textarea>
-      <span class="field-hint">{{ atr.a_notes_hint }}</span>
-    </label>
     <div class="choice-editor" hidden>
       <p class="field-hint" style="margin-bottom:6px">{{ atr.a_choices_intro }}</p>
       <div class="choice-list"></div>
@@ -471,25 +459,8 @@ function prepareSubmit() {
   }
   return true;
 }
-// Auto-grow a notes textarea to fit its content, capped at ~5 rows so a long
-// note stays readable without taking over the form. Runs on input and once on
-// load for pre-filled fields (edit mode).
-function autoGrow(el) {
-  const cs = window.getComputedStyle(el);
-  const line = parseFloat(cs.lineHeight) || 20;
-  const padTop = parseFloat(cs.paddingTop) || 0;
-  const padBottom = parseFloat(cs.paddingBottom) || 0;
-  const borderTop = parseFloat(cs.borderTopWidth) || 0;
-  const borderBottom = parseFloat(cs.borderBottomWidth) || 0;
-  const maxH = line * 5 + padTop + padBottom + borderTop + borderBottom;
-  el.style.height = 'auto';
-  const needed = el.scrollHeight + borderTop + borderBottom;
-  el.style.height = Math.min(needed, maxH) + 'px';
-  el.style.overflowY = needed > maxH ? 'auto' : 'hidden';
-}
 // Render previews for any table/matrix questions already present (edit mode).
 document.addEventListener('DOMContentLoaded', function () {
-  document.querySelectorAll('textarea.autogrow').forEach(autoGrow);
   document.querySelectorAll('.q-row').forEach(function (row) {
     const sel = row.querySelector('select[name=q_type]');
     if (!sel) return;

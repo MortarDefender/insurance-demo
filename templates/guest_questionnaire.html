@@ -19,9 +19,6 @@
         <label style="margin-top:0">{{ loop.index }}. {{ question.prompt }}
           {% if question.required %}<span class="req">*</span>{% endif %}
         </label>
-        {% if question.notes %}
-        <p class="field-hint" dir="auto" style="margin:2px 0 6px; white-space:pre-line">{{ question.notes }}</p>
-        {% endif %}
         {% set nm = "answer_" ~ loop.index0 %}
         {% if question.type == "text" %}
           <textarea name="{{ nm }}" rows="3" dir="{{ dir | default('ltr') }}"></textarea>
@@ -83,6 +80,12 @@
         {% else %}
           <input type="text" name="{{ nm }}" dir="{{ dir | default('ltr') }}">
         {% endif %}
+        <label class="q-notes-label">{{ tr.q_notes }}
+          <textarea name="{{ nm }}_notes" rows="1" class="autogrow"
+                    dir="{{ dir | default('ltr') }}"
+                    oninput="autoGrow(this)"
+                    {% if preview %}disabled{% endif %}></textarea>
+        </label>
       </div>
       {% endfor %}
       <button type="submit" class="btn btn--lg js-submit-btn"
@@ -106,6 +109,24 @@
 </div>
 
 <script>
+// Auto-grow the per-question notes box to fit what the client types, capped at
+// ~5 rows so a long note stays readable without taking over the page.
+function autoGrow(el) {
+  var cs = window.getComputedStyle(el);
+  var line = parseFloat(cs.lineHeight) || 20;
+  var padTop = parseFloat(cs.paddingTop) || 0;
+  var padBottom = parseFloat(cs.paddingBottom) || 0;
+  var borderTop = parseFloat(cs.borderTopWidth) || 0;
+  var borderBottom = parseFloat(cs.borderBottomWidth) || 0;
+  var maxH = line * 5 + padTop + padBottom + borderTop + borderBottom;
+  el.style.height = 'auto';
+  var needed = el.scrollHeight + borderTop + borderBottom;
+  el.style.height = Math.min(needed, maxH) + 'px';
+  el.style.overflowY = needed > maxH ? 'auto' : 'hidden';
+}
+document.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('textarea.autogrow').forEach(autoGrow);
+});
 (function () {
   var form = document.querySelector('.js-submit-form');
   if (!form) return;

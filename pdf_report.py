@@ -165,8 +165,12 @@ def _table_answer_flowable(answer, styles, font_ok):
 
 
 def build_questionnaire_pdf(*, title, first_name, last_name, answers,
-                            password=""):
+                            notes=None, password=""):
     """answers: list of (prompt, answer_string). Returns PDF bytes.
+
+    ``notes`` is an optional list aligned with ``answers`` holding the client's
+    free-text note for each question (empty string when none). Each present note
+    is rendered under its answer.
 
     If ``password`` is a non-empty string, the PDF is encrypted with it as the
     open (user) password using reportlab's 128-bit standard encryption. This is
@@ -203,6 +207,9 @@ def build_questionnaire_pdf(*, title, first_name, last_name, answers,
     styles.add(ParagraphStyle(
         name="Muted", parent=styles["Normal"], fontName="Helvetica",
         fontSize=9, leading=12, textColor=colors.HexColor("#666666")))
+    styles.add(ParagraphStyle(
+        name="QNote", parent=styles["Normal"], fontName="Helvetica",
+        fontSize=9, leading=12, textColor=colors.HexColor("#666666")))
 
     story = []
     story.append(_cell(title, base_style=styles["Title"], font_ok=font_ok))
@@ -218,7 +225,8 @@ def build_questionnaire_pdf(*, title, first_name, last_name, answers,
     is_rtl_doc = _is_rtl(title) or any(_is_rtl(p) for p, _ in answers)
 
     rows = []
-    for prompt, answer in answers:
+    notes = notes or []
+    for idx, (prompt, answer) in enumerate(answers):
         prompt_cell = _cell(prompt, base_style=styles["QPrompt"],
                             font_ok=font_ok)
         if isinstance(answer, dict):
@@ -227,6 +235,14 @@ def build_questionnaire_pdf(*, title, first_name, last_name, answers,
             answer = answer if answer not in (None, "") else "(no answer)"
             answer_cell = _cell(answer, base_style=styles["QAnswer"],
                                 font_ok=font_ok)
+        note = notes[idx] if idx < len(notes) else ""
+        if note:
+            # Stack the client's note beneath the answer, in a muted style, with
+            # a small label so the reader can tell answer from note.
+            label = "הערות" if _is_rtl(note) else "Notes"
+            note_cell = _cell(f"{label}: {note}", base_style=styles["QNote"],
+                              font_ok=font_ok)
+            answer_cell = [answer_cell, Spacer(1, 2 * mm), note_cell]
         rows.append(_order_cells(is_rtl_doc, prompt_cell, answer_cell))
 
     if rows:
