@@ -154,6 +154,9 @@ input, select, textarea {
   transition: border-color .15s, box-shadow .15s;
 }
 textarea { resize: vertical; min-height: 84px; }
+/* Adaptive notes fields start at a single row and grow with content (capped in
+   JS at ~5 rows). They opt out of the default textarea min-height. */
+textarea.autogrow { min-height: 0; resize: none; overflow-y: hidden; }
 input:focus, select:focus, textarea:focus {
   outline: none; border-color: var(--brand); box-shadow: var(--ring);
 }
