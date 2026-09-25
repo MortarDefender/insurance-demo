@@ -137,6 +137,15 @@ def create_app(settings=None):
 
     from i18n import strings as i18n_strings
 
+    @app.template_filter("localdatetime")
+    def _localdatetime(ts):
+        """Format a POSIX timestamp as a short local date+time for the admin
+        list. Returns an empty string for missing values."""
+        if not ts:
+            return ""
+        from datetime import datetime
+        return datetime.fromtimestamp(ts).strftime("%Y-%m-%d %H:%M")
+
     def _admin_lang():
         """Admin UI language from the session ('en' default, or 'he')."""
         return "he" if session.get("admin_lang") == "he" else "en"
@@ -220,6 +229,8 @@ def register_admin_routes(app):
         prompts = form.getlist("q_prompt")
         types = form.getlist("q_type")
         options = form.getlist("q_options")
+        # Optional free-text notes shown to the client under each question.
+        notes = form.getlist("q_notes")
         # Fixed row count for table questions (one entry per question row).
         table_rows = form.getlist("q_rows")
         # Row labels for matrix questions (pipe-joined, one entry per question).
@@ -240,7 +251,10 @@ def register_admin_routes(app):
             opts_raw = options[i] if i < len(options) else ""
             opts = [o.strip() for o in opts_raw.split("|") if o.strip()]
             is_required = (req_flags[i] == "1") if i < len(req_flags) else False
+            note = notes[i].strip() if i < len(notes) else ""
             q = {"prompt": prompt, "type": qtype, "required": is_required}
+            if note:
+                q["notes"] = note
             if qtype == "choice":
                 # A choice needs real options. If none were provided (e.g. the
                 # client-side editor was bypassed), fall back to free text so the
@@ -370,6 +384,54 @@ def register_admin_routes(app):
                                       else "en"))
         link = url_for("guest", token=token, _external=True)
         return jsonify({"link": link})
+
+    @app.route("/admin/validate-id")
+    @login_required
+    def admin_validate_id():
+        # Advisory Israeli-ID check for the share dialog. Never blocks; the
+        # admin decides whether to proceed. Empty input is reported as neutral.
+        from id_validation import is_valid_israeli_id
+        raw = request.args.get("value", "")
+        if not raw.strip():
+            return jsonify({"state": "empty"})
+        return jsonify({"state": "valid" if is_valid_israeli_id(raw)
+                        else "invalid"})
+
+    def _preview_dir(*texts):
+        from textdir import direction
+        if session.get("admin_lang") == "he":
+            return "rtl"
+        return direction(*texts)
+
+    @app.route("/admin/questionnaires/<qid>/preview")
+    @login_required
+    def questionnaire_preview(qid):
+        from i18n import strings as i18n_strings
+        q = store.get_questionnaire(qid)
+        if q is None:
+            flash("Not found")
+            return redirect(url_for("admin"))
+        q_dir = _preview_dir(q["name"], *[qq.get("prompt", "")
+                                          for qq in q["questions"]])
+        tr = i18n_strings(q_dir)
+        # Render exactly what the client sees, but read-only (preview mode).
+        return render_template("guest_questionnaire.html", q=q,
+                               first="", dir=q_dir, greeting=tr["greeting"],
+                               tr=tr, error=None, preview=True)
+
+    @app.route("/admin/documents/<did>/preview")
+    @login_required
+    def document_preview(did):
+        from i18n import strings as i18n_strings
+        doc = store.get_document(did)
+        if doc is None:
+            flash("Not found")
+            return redirect(url_for("admin"))
+        d_dir = _preview_dir(doc["display_name"])
+        tr = i18n_strings(d_dir)
+        return render_template("guest_document.html", doc=doc, first="",
+                               token="", dir=d_dir, greeting=tr["greeting"],
+                               tr=tr, error=None, preview=True)
 
 
 def register_guest_routes(app):

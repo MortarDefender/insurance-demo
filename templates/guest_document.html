@@ -11,21 +11,29 @@
 
   <div class="card">
     <p class="help" style="margin-top:0">{{ tr.d_intro }}</p>
+    {% if preview %}<div class="alert alert--success">{{ atr.a_preview_template }}</div>{% endif %}
     <ol class="steps">
       <li>{{ tr.d_step_download }}</li>
       <li>{{ tr.d_step_sign }}</li>
       <li>{{ tr.d_step_upload }}</li>
     </ol>
+    {% if preview %}
+    <span class="btn secondary" aria-disabled="true" style="opacity:.7; cursor:default">
+      &#8681; {{ tr.d_download }}: {{ doc.display_name }}</span>
+    {% else %}
     <a class="btn secondary" href="{{ url_for('guest_download', token=token) }}">
       &#8681; {{ tr.d_download }}: {{ doc.display_name }}</a>
+    {% endif %}
   </div>
 
   {% if error %}<div class="alert alert--error">{{ error }}</div>{% endif %}
   <form method="post" enctype="multipart/form-data" class="card js-submit-form">
     <label style="margin-top:0">{{ tr.d_upload_label }}
-      <input type="file" name="file" accept=".pdf,.doc,.docx" required></label>
+      <input type="file" name="file" accept=".pdf,.doc,.docx"
+             {% if not preview %}required{% endif %}></label>
     <button type="submit" class="btn btn--lg js-submit-btn"
-            data-label="{{ tr.d_submit }}" style="margin-top:20px">
+            data-label="{{ tr.d_submit }}" style="margin-top:20px"
+            {% if preview %}disabled{% endif %}>
       {{ tr.d_submit }}</button>
   </form>
 

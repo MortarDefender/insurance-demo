@@ -157,8 +157,8 @@ textarea { resize: vertical; min-height: 84px; }
 input:focus, select:focus, textarea:focus {
   outline: none; border-color: var(--brand); box-shadow: var(--ring);
 }
-input[type="checkbox"] { width: auto; margin: 0 8px 0 0; vertical-align: middle;
-  transform: scale(1.15); accent-color: var(--brand); }
+input[type="checkbox"] { width: auto; margin: 0; vertical-align: middle;
+  transform: scale(1.15); accent-color: var(--brand); flex: none; }
 input[type="file"] { padding: 9px; background: var(--bg-tint); cursor: pointer; }
 select { appearance: none;
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path fill='%236b7684' d='M1 1l5 5 5-5'/></svg>");
@@ -278,7 +278,7 @@ td .btn-row { flex-wrap: nowrap; }
 .q-row__foot { display: flex; align-items: center; justify-content: space-between;
   margin-top: 12px; gap: 12px; }
 .inline-check { display: flex; align-items: center; margin-top: 0;
-  font-weight: 600; }
+  gap: 8px; font-weight: 600; }
 
 /* Choice editor (multiple-choice options) */
 .choice-editor { margin-top: 14px; padding: 14px; border: 1px dashed var(--line-strong);
@@ -356,7 +356,10 @@ td .btn-row { flex-wrap: nowrap; }
 [dir="rtl"] { text-align: right; }
 [dir="rtl"] th, [dir="rtl"] td { text-align: right; }
 [dir="rtl"] label { text-align: right; }
-[dir="rtl"] .q-row .q-grid { grid-template-columns: 160px 1fr; }
+/* The builder grid keeps the same track sizes in RTL: the question field
+   (first item) stays wide and the type select stays narrow. Grid auto-places
+   the first item into the right-most track under RTL, so no override is
+   needed here. */
 
 /* ---------- Responsive ---------- */
 @media (max-width: 640px) {

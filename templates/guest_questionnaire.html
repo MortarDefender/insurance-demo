@@ -11,6 +11,7 @@
 
   <div class="card">
     <p class="help" style="margin-top:0">{{ tr.q_intro }}</p>
+    {% if preview %}<div class="alert alert--success">{{ atr.a_preview_template }}</div>{% endif %}
     {% if error %}<div class="alert alert--error">{{ error }}</div>{% endif %}
     <form method="post" class="js-submit-form">
       {% for question in q.questions %}
@@ -18,9 +19,12 @@
         <label style="margin-top:0">{{ loop.index }}. {{ question.prompt }}
           {% if question.required %}<span class="req">*</span>{% endif %}
         </label>
+        {% if question.notes %}
+        <p class="field-hint" dir="auto" style="margin:2px 0 6px; white-space:pre-line">{{ question.notes }}</p>
+        {% endif %}
         {% set nm = "answer_" ~ loop.index0 %}
         {% if question.type == "text" %}
-          <textarea name="{{ nm }}" rows="3" dir="auto"></textarea>
+          <textarea name="{{ nm }}" rows="3" dir="{{ dir | default('ltr') }}"></textarea>
         {% elif question.type == "number" %}
           <input type="number" name="{{ nm }}">
         {% elif question.type == "date" %}
@@ -48,7 +52,7 @@
                 {% for r in range(question.rows) %}
                 <tr>
                   {% for c in range(question.columns|length) %}
-                  <td><input type="text" dir="auto"
+                  <td><input type="text" dir="{{ dir | default('ltr') }}"
                        name="{{ nm }}_r{{ r }}_c{{ c }}"></td>
                   {% endfor %}
                 </tr>
@@ -68,7 +72,7 @@
                 <tr>
                   <th scope="row">{{ label }}</th>
                   {% for c in range(question.columns|length) %}
-                  <td><input type="text" dir="auto"
+                  <td><input type="text" dir="{{ dir | default('ltr') }}"
                        name="{{ nm }}_r{{ loop.index0 }}_c{{ c }}"></td>
                   {% endfor %}
                 </tr>
@@ -77,12 +81,13 @@
             </table>
           </div>
         {% else %}
-          <input type="text" name="{{ nm }}" dir="auto">
+          <input type="text" name="{{ nm }}" dir="{{ dir | default('ltr') }}">
         {% endif %}
       </div>
       {% endfor %}
       <button type="submit" class="btn btn--lg js-submit-btn"
-              data-label="{{ tr.q_submit }}" style="margin-top:22px">
+              data-label="{{ tr.q_submit }}" style="margin-top:22px"
+              {% if preview %}disabled{% endif %}>
         {{ tr.q_submit }}</button>
     </form>
   </div>

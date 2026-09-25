@@ -20,14 +20,19 @@
 </div>
 <div class="table-wrap">
 <table>
-  <thead><tr><th>{{ atr.a_name }}</th><th>{{ atr.a_questions }}</th><th style="text-align:end">{{ atr.a_actions }}</th></tr></thead>
+  <thead><tr><th>{{ atr.a_name }}</th><th>{{ atr.a_questions }}</th><th>{{ atr.a_last_modified }}</th><th style="text-align:end">{{ atr.a_actions }}</th></tr></thead>
   <tbody>
   {% for q in questionnaires %}
     <tr>
       <td class="cell-title">{{ q.name }}</td>
       <td><span class="badge badge--count">{{ q.questions|length }}</span></td>
+      <td class="muted">{{ q.updated_at | localdatetime or atr.a_never }}</td>
       <td>
         <div class="btn-row btn-row--end">
+          <a class="icon-btn" title="{{ atr.a_preview_template }}"
+             aria-label="{{ atr.a_preview_template }}" target="_blank"
+             href="{{ url_for('questionnaire_preview', qid=q.id) }}">
+            {{ ic.eye() }}</a>
           <button class="icon-btn icon-btn--primary"
             title="{{ atr.a_share }}" aria-label="{{ atr.a_share }}"
             onclick="openShare('questionnaire','{{ q.id }}','{{ q.name }}')">
@@ -45,7 +50,7 @@
       </td>
     </tr>
   {% else %}
-    <tr class="empty-row"><td colspan="3">{{ atr.a_no_questionnaires }}</td></tr>
+    <tr class="empty-row"><td colspan="4">{{ atr.a_no_questionnaires }}</td></tr>
   {% endfor %}
   </tbody>
 </table>
@@ -59,14 +64,19 @@
 </div>
 <div class="table-wrap">
 <table>
-  <thead><tr><th>{{ atr.a_name }}</th><th>{{ atr.a_file }}</th><th style="text-align:end">{{ atr.a_actions }}</th></tr></thead>
+  <thead><tr><th>{{ atr.a_name }}</th><th>{{ atr.a_file }}</th><th>{{ atr.a_last_modified }}</th><th style="text-align:end">{{ atr.a_actions }}</th></tr></thead>
   <tbody>
   {% for d in documents %}
     <tr>
       <td class="cell-title">{{ d.display_name }}</td>
       <td class="muted">{{ d.original_filename }}</td>
+      <td class="muted">{{ d.updated_at | localdatetime or atr.a_never }}</td>
       <td>
         <div class="btn-row btn-row--end">
+          <a class="icon-btn" title="{{ atr.a_preview_template }}"
+             aria-label="{{ atr.a_preview_template }}" target="_blank"
+             href="{{ url_for('document_preview', did=d.id) }}">
+            {{ ic.eye() }}</a>
           <button class="icon-btn icon-btn--primary"
             title="{{ atr.a_share }}" aria-label="{{ atr.a_share }}"
             onclick="openShare('document','{{ d.id }}','{{ d.display_name }}')">
@@ -82,7 +92,7 @@
       </td>
     </tr>
   {% else %}
-    <tr class="empty-row"><td colspan="3">{{ atr.a_no_documents }}</td></tr>
+    <tr class="empty-row"><td colspan="4">{{ atr.a_no_documents }}</td></tr>
   {% endfor %}
   </tbody>
 </table>
@@ -99,8 +109,10 @@
     <label>{{ atr.a_first_name }} <input type="text" id="firstName"></label>
     <label>{{ atr.a_last_name }} <input type="text" id="lastName"></label>
     <label>{{ atr.a_id_optional }}
-      <input type="text" id="clientId">
+      <input type="text" id="clientId" inputmode="numeric" autocomplete="off"
+             oninput="checkClientId()">
       <span class="field-hint">{{ atr.a_id_hint }}</span>
+      <span id="idStatus" class="field-hint" style="display:none"></span>
     </label>
     <label>{{ atr.a_expiry }}
       <input type="number" id="expiryDays" min="1" max="365"
@@ -134,10 +146,47 @@ function openShare(kind, id, name) {
   document.getElementById('linkResult').style.display = 'none';
   document.getElementById('linkActions').style.display = 'none';
   document.getElementById('copyStatus').textContent = '';
+  var idStatus = document.getElementById('idStatus');
+  idStatus.style.display = 'none';
+  idStatus.textContent = '';
   document.getElementById('shareModal').classList.add('open');
 }
 function closeShare() {
   document.getElementById('shareModal').classList.remove('open');
+}
+// Advisory Israeli-ID check. Purely informational: it never blocks generating
+// the link. Debounced so we don't call the server on every keystroke.
+var _idTimer = null;
+function checkClientId() {
+  const input = document.getElementById('clientId');
+  const status = document.getElementById('idStatus');
+  const val = input.value.trim();
+  if (_idTimer) clearTimeout(_idTimer);
+  if (!val) {
+    status.style.display = 'none';
+    status.textContent = '';
+    return;
+  }
+  _idTimer = setTimeout(async function () {
+    try {
+      const resp = await fetch(
+        '{{ url_for("admin_validate_id") }}?value=' + encodeURIComponent(val));
+      const data = await resp.json();
+      if (data.state === 'valid') {
+        status.textContent = '\u2713 {{ atr.a_id_valid }}';
+        status.style.color = 'var(--success)';
+      } else if (data.state === 'invalid') {
+        status.textContent = '\u26A0 {{ atr.a_id_invalid }}';
+        status.style.color = 'var(--danger)';
+      } else {
+        status.style.display = 'none';
+        return;
+      }
+      status.style.display = 'block';
+    } catch (e) {
+      status.style.display = 'none';
+    }
+  }, 300);
 }
 async function generateLink() {
   const body = new FormData();

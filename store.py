@@ -36,8 +36,15 @@ class Store:
         items = []
         for name in os.listdir(self.q_dir):
             if name.endswith(".json"):
-                with open(os.path.join(self.q_dir, name), encoding="utf-8") as f:
-                    items.append(json.load(f))
+                path = os.path.join(self.q_dir, name)
+                with open(path, encoding="utf-8") as f:
+                    data = json.load(f)
+                # Last-modified comes from the file mtime so existing templates
+                # get a value without any migration.
+                data["updated_at"] = os.path.getmtime(path)
+                items.append(data)
+        # Most recently changed first.
+        items.sort(key=lambda d: d.get("updated_at", 0), reverse=True)
         return items
 
     def update_questionnaire(self, qid, *, name, questions):
@@ -89,8 +96,12 @@ class Store:
         items = []
         for name in os.listdir(self.d_dir):
             if name.endswith(".json"):
-                with open(os.path.join(self.d_dir, name), encoding="utf-8") as f:
-                    items.append(json.load(f))
+                path = os.path.join(self.d_dir, name)
+                with open(path, encoding="utf-8") as f:
+                    data = json.load(f)
+                data["updated_at"] = os.path.getmtime(path)
+                items.append(data)
+        items.sort(key=lambda d: d.get("updated_at", 0), reverse=True)
         return items
 
     def delete_document(self, did):
